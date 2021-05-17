@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="CompilerConfiguration">
+    <bytecodeTargetLevel target="1.8">
+      <module name="compiler-plugin-export-parent.compiler-plugin-export" target="15" />
+      <module name="compiler-plugin-export-parent.compiler-plugin-export-common" target="15" />
+      <module name="compiler-plugin-export-parent.compiler-plugin-export-compiler-plugin" target="15" />
+      <module name="compiler-plugin-export-parent.compiler-plugin-export-generator" target="15" />
+      <module name="compiler-plugin-export-parent.compiler-plugin-import" target="15" />
+      <module name="compiler-plugin-export-parent.compiler-plugin-import-generator" target="15" />
+      <module name="compiler-plugin-export.compiler-plugin-export" target="15" />
+      <module name="compiler-plugin-export.compiler-plugin-export-common" target="15" />
+      <module name="compiler-plugin-export.compiler-plugin-export-compiler-plugin" target="15" />
+      <module name="compiler-plugin-reference.compiler-plugin-export" target="15" />
+      <module name="compiler-plugin-reference.compiler-plugin-export-common" target="15" />
+      <module name="compiler-plugin-reference.compiler-plugin-export-compiler-plugin" target="15" />
+      <module name="compiler-plugin-reference.compiler-plugin-import" target="15" />
+      <module name="compiler-plugin-reference.compiler-plugin-import-generator" target="15" />
+      <module name="test.main" target="15" />
+      <module name="test.plugin" target="15" />
+      <module name="test.plugin.main" target="15" />
+      <module name="test.plugin.test" target="15" />
+      <module name="test.test" target="15" />
+    </bytecodeTargetLevel>
+  </component>
+</project>
