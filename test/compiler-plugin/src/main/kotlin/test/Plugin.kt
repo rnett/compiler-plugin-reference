@@ -7,17 +7,11 @@ import org.jetbrains.kotlin.cli.common.CLIConfigurationKeys
 import org.jetbrains.kotlin.cli.common.messages.MessageCollector
 import org.jetbrains.kotlin.com.intellij.mock.MockProject
 import org.jetbrains.kotlin.compiler.plugin.AbstractCliOption
-import org.jetbrains.kotlin.compiler.plugin.CliOption
 import org.jetbrains.kotlin.compiler.plugin.CommandLineProcessor
 import org.jetbrains.kotlin.compiler.plugin.ComponentRegistrar
 import org.jetbrains.kotlin.config.CompilerConfiguration
-import org.jetbrains.kotlin.config.CompilerConfigurationKey
+import org.jetbrains.kotlin.ir.builders.IrBuilderWithScope
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
-import org.jetbrains.kotlin.ir.declarations.name
-import org.jetbrains.kotlin.ir.util.IdSignature
-import org.jetbrains.kotlin.ir.util.kotlinFqName
-import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
-import java.io.File
 
 @AutoService(CommandLineProcessor::class)
 class PluginExportCommandLineProcessor : CommandLineProcessor {
@@ -40,11 +34,16 @@ class PluginExportComponentRegistrar : ComponentRegistrar {
     }
 }
 
+fun IrBuilderWithScope.test() {
+//    irCallConstructor(null as IrFunctionSymbol).apply {
+//        irVararg()
+//    }
+}
+
 class PluginExportIrGenerationExtension(val messageCollector: MessageCollector) : IrGenerationExtension {
     override fun generate(moduleFragment: IrModuleFragment, pluginContext: IrPluginContext) {
         //TODO use pluginContext.referenceTopLevel()
-        with(pluginContext){
-
+        with(pluginContext) {
 
             println()
         }

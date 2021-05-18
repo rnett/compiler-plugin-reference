@@ -26,9 +26,34 @@ sealed class ExportDeclaration {
     val parent: ResolvedName? by lazy { fqName.parent }
 
     @Serializable
+    enum class Variance {
+        IN, OUT, NONE;
+
+        val render get() = if (this == NONE) "" else name.lowercase()
+        val prefix
+            get() = render.let {
+                if (it.isNotBlank())
+                    " $it"
+                else
+                    ""
+            }
+
+    }
+
+    @Serializable
+    data class TypeParameter(val name: String, val index: Int, val variance: Variance, val supertypes: List<TypeString>)
+
+    @Serializable
+    data class Param(val name: String, val index: Int, val optional: Boolean, val varargs: Boolean, val type: TypeString)
+
+    @Serializable
+    data class Receiver(val typeNic: String, val type: TypeString)
+
+    @Serializable
     data class Class(
         override val fqName: ResolvedName,
         override val signature: Signature,
+        val typeParameters: List<TypeParameter>,
         override val customName: String? = null
     ) : ExportDeclaration()
 
@@ -36,6 +61,10 @@ sealed class ExportDeclaration {
     data class Property(
         override val fqName: ResolvedName,
         override val signature: Signature,
+        val returnType: TypeString,
+        val dispatchReceiver: Receiver?,
+        val extensionReceivers: List<Receiver>,
+        val typeParameters: List<TypeParameter>,
         override val customName: String? = null
     ) : ExportDeclaration()
 
@@ -43,22 +72,22 @@ sealed class ExportDeclaration {
     data class Function(
         override val fqName: ResolvedName,
         override val signature: Signature,
-        override val customName: String? = null,
+        val returnType: TypeString,
         val dispatchReceiver: Receiver?,
         val extensionReceivers: List<Receiver>,
-        val valueParameters: Map<String, Param>
+        val typeParameters: List<TypeParameter>,
+        val valueParameters: List<Param>,
+        override val customName: String? = null,
     ) : ExportDeclaration() {
-        @Serializable
-        data class Param(val optional: Boolean, val varargs: Boolean)
-
-        @Serializable
-        data class Receiver(val typeNic: String)
     }
 
     @Serializable
     data class Constructor(
         override val fqName: ResolvedName,
         override val signature: Signature,
+        val constructedClass: TypeString,
+        val classTypeParams: List<TypeParameter>,
+        val valueParameters: List<Param>,
         override val customName: String? = null
     ) : ExportDeclaration() {
         val classFqName: ResolvedName = fqName.parent!!
@@ -70,8 +99,21 @@ sealed class ExportDeclaration {
     data class Typealias(
         override val fqName: ResolvedName,
         override val signature: Signature,
+        val typeParameters: List<TypeParameter>,
+        val expandedType: TypeString,
         override val customName: String? = null
     ) : ExportDeclaration()
+}
+
+@Serializable
+@JvmInline
+value class TypeString(val type: String) {
+    override fun toString(): String = type
+    val kdoc get() = "`$type`"
+
+    companion object {
+        val None = TypeString("")
+    }
 }
 
 @Serializable

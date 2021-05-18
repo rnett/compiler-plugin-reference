@@ -29,7 +29,7 @@ internal object ReferenceBuilder {
                     val newReferences = TypeSpec.objectBuilder(declarationTree.displayName)
                     val newResolved = TypeSpec.objectBuilder(declarationTree.displayName)
 
-                    newReferences.superclass(Types.ClassReference)
+                    newReferences.superclass(References.ClassReference)
                         .addSuperclassConstructorParameter(declarationTree.declaration.fqName.toFqName())
                         .addSuperclassConstructorParameter(declarationTree.declaration.signature.toIdSignature())
 
@@ -45,24 +45,24 @@ internal object ReferenceBuilder {
     }
 
     private fun addNameDeclaration(name: String, declaration: ExportDeclaration): PropertySpec = when (declaration) {
-        is ExportDeclaration.Class -> PropertySpec.builder(name, Types.ClassReference)
-            .initializer("%T(%L, %L)", Types.ClassReference, declaration.fqName.toFqName(), declaration.signature.toIdSignature())
+        is ExportDeclaration.Class -> PropertySpec.builder(name, References.ClassReference)
+            .initializer("%T(%L, %L)", References.ClassReference, declaration.fqName.toFqName(), declaration.signature.toIdSignature())
             .build()
 
-        is ExportDeclaration.Constructor -> PropertySpec.builder(name, Types.ConstructorReference)
-            .initializer("%T(%L, %L)", Types.ConstructorReference, declaration.classFqName.toFqName(), declaration.signature.toIdSignature())
+        is ExportDeclaration.Constructor -> PropertySpec.builder(name, References.ConstructorReference)
+            .initializer("%T(%L, %L)", References.ConstructorReference, declaration.classFqName.toFqName(), declaration.signature.toIdSignature())
             .build()
 
-        is ExportDeclaration.Function -> PropertySpec.builder(name, Types.FunctionReference)
-            .initializer("%T(%L, %L)", Types.FunctionReference, declaration.fqName.toFqName(), declaration.signature.toIdSignature())
+        is ExportDeclaration.Function -> PropertySpec.builder(name, References.FunctionReference)
+            .initializer("%T(%L, %L)", References.FunctionReference, declaration.fqName.toFqName(), declaration.signature.toIdSignature())
             .build()
 
-        is ExportDeclaration.Property -> PropertySpec.builder(name, Types.PropertyReference)
-            .initializer("%T(%L, %L)", Types.PropertyReference, declaration.fqName.toFqName(), declaration.signature.toIdSignature())
+        is ExportDeclaration.Property -> PropertySpec.builder(name, References.PropertyReference)
+            .initializer("%T(%L, %L)", References.PropertyReference, declaration.fqName.toFqName(), declaration.signature.toIdSignature())
             .build()
 
-        is ExportDeclaration.Typealias -> PropertySpec.builder(name, Types.TypealiasReference)
-            .initializer("%T(%L, %L)", Types.TypealiasReference, declaration.fqName.toFqName(), declaration.signature.toIdSignature())
+        is ExportDeclaration.Typealias -> PropertySpec.builder(name, References.TypealiasReference)
+            .initializer("%T(%L, %L)", References.TypealiasReference, declaration.fqName.toFqName(), declaration.signature.toIdSignature())
             .build()
     }
 }

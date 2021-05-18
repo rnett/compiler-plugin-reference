@@ -3,14 +3,12 @@ package com.rnett.plugin
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrConstructor
 import org.jetbrains.kotlin.ir.declarations.IrDeclaration
-import org.jetbrains.kotlin.ir.declarations.IrField
 import org.jetbrains.kotlin.ir.declarations.IrProperty
 import org.jetbrains.kotlin.ir.declarations.IrSimpleFunction
 import org.jetbrains.kotlin.ir.declarations.IrTypeAlias
 import org.jetbrains.kotlin.ir.symbols.IrBindableSymbol
 import org.jetbrains.kotlin.ir.symbols.IrClassSymbol
 import org.jetbrains.kotlin.ir.symbols.IrConstructorSymbol
-import org.jetbrains.kotlin.ir.symbols.IrFieldSymbol
 import org.jetbrains.kotlin.ir.symbols.IrPropertySymbol
 import org.jetbrains.kotlin.ir.symbols.IrSimpleFunctionSymbol
 import org.jetbrains.kotlin.ir.symbols.IrTypeAliasSymbol
@@ -41,7 +39,8 @@ open class ResolvedClass(symbol: IrClassSymbol, fqName: FqName) : ResolvedRefere
     }
 }
 
-class ResolvedTypealias(symbol: IrTypeAliasSymbol, fqName: FqName) :
+//TODO use properties?
+open class ResolvedTypealias(symbol: IrTypeAliasSymbol, fqName: FqName) :
     ResolvedReference<IrTypeAliasSymbol, IrTypeAlias>(symbol, fqName), IrTypeAliasSymbol by symbol {
     val type: IrType get() = owner.expandedType
 
