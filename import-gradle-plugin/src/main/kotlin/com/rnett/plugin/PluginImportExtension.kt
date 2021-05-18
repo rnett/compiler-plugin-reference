@@ -30,7 +30,7 @@ abstract class PluginImportExtension(objects: ObjectFactory) {
             task.outputDirectory.set(v)
         }
 
-    fun dependsOn(vararg paths: Any){
+    fun dependsOn(vararg paths: Any) {
         task.dependsOn(paths)
     }
 

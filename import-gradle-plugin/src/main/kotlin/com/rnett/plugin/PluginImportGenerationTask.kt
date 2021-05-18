@@ -9,7 +9,7 @@ import org.gradle.api.tasks.InputDirectory
 import org.gradle.api.tasks.OutputDirectory
 import org.gradle.api.tasks.TaskAction
 
-abstract class PluginImportGenerationTask: DefaultTask() {
+abstract class PluginImportGenerationTask : DefaultTask() {
     @InputDirectory
     val inputDirectory: DirectoryProperty = project.objects.directoryProperty()
 
@@ -23,7 +23,7 @@ abstract class PluginImportGenerationTask: DefaultTask() {
     val outputDirectory: DirectoryProperty = project.objects.directoryProperty()
 
     @TaskAction
-    fun generate(){
+    fun generate() {
         val input = inputDirectory.get().asFile
         val output = outputDirectory.get().asFile
         val declarations = input.listFiles().orEmpty().flatMap { ExportDeclaration.deserialize(it.readText()) }

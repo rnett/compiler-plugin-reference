@@ -14,9 +14,7 @@ import org.jetbrains.kotlin.config.CompilerConfiguration
 import org.jetbrains.kotlin.config.CompilerConfigurationKey
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
 import org.jetbrains.kotlin.ir.declarations.name
-import org.jetbrains.kotlin.ir.util.IdSignature
 import org.jetbrains.kotlin.ir.util.kotlinFqName
-import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
 import java.io.File
 
 @AutoService(CommandLineProcessor::class)
@@ -62,6 +60,7 @@ class PluginExportIrGenerationExtension(val messageCollector: MessageCollector, 
     init {
         outputDir.mkdirs()
     }
+
     override fun generate(moduleFragment: IrModuleFragment, pluginContext: IrPluginContext) {
         //TODO use pluginContext.referenceTopLevel()
         moduleFragment.files.forEach {

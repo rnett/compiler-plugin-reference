@@ -70,13 +70,13 @@ sealed class DeclarationTree(
     ) : DeclarationTree(declaration.fqName, emptyList(), displayName) {
 
         override fun withName(name: String) = Leaf(declaration, name)
-        override fun withChildren(children: List<DeclarationTree>)= this
+        override fun withChildren(children: List<DeclarationTree>) = this
     }
 
     fun collapsePackages(): DeclarationTree {
-        if(children.size == 1){
+        if (children.size == 1) {
             val child = children[0]
-            if(child is Class || child is Package)
+            if (child is Class || child is Package)
                 return child.collapsePackages()
         }
         return this
@@ -85,8 +85,8 @@ sealed class DeclarationTree(
     fun disambiguateOverloads(): DeclarationTree {
         val nameUsages = mutableMapOf<String, Int>()
         return withChildren(children.map {
-            val count = nameUsages.getOrPut(it.displayName){ 0 }
-            if(count == 0)
+            val count = nameUsages.getOrPut(it.displayName) { 0 }
+            if (count == 0)
                 it
             else {
                 it.withName(it.displayName + "_$count")

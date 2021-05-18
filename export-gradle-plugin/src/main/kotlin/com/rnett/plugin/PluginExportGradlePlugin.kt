@@ -1,6 +1,5 @@
 package com.rnett.plugin
 
-import com.rnett.plugin.BuildConfig
 import org.gradle.api.Project
 import org.gradle.api.provider.Provider
 import org.jetbrains.kotlin.gradle.plugin.KotlinCompilation
@@ -16,9 +15,11 @@ class PluginExportGradlePlugin : KotlinCompilerPluginSupportPlugin {
 
     override fun applyToCompilation(kotlinCompilation: KotlinCompilation<*>): Provider<List<SubpluginOption>> {
         val project = kotlinCompilation.target.project
-        return project.provider { listOf(
-            SubpluginOption("outputDir", project.buildDir.resolve("pluginExport").absolutePath)
-        ) }
+        return project.provider {
+            listOf(
+                SubpluginOption("outputDir", project.buildDir.resolve("pluginExport").absolutePath)
+            )
+        }
     }
 
     override fun getCompilerPluginId(): String = "com.rnett.plugin-export-compiler-plugin"

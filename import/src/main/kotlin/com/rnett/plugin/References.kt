@@ -11,7 +11,6 @@ import org.jetbrains.kotlin.ir.declarations.IrTypeAlias
 import org.jetbrains.kotlin.ir.symbols.IrBindableSymbol
 import org.jetbrains.kotlin.ir.symbols.IrClassSymbol
 import org.jetbrains.kotlin.ir.symbols.IrConstructorSymbol
-import org.jetbrains.kotlin.ir.symbols.IrFunctionSymbol
 import org.jetbrains.kotlin.ir.symbols.IrPropertySymbol
 import org.jetbrains.kotlin.ir.symbols.IrSimpleFunctionSymbol
 import org.jetbrains.kotlin.ir.symbols.IrSymbol
@@ -31,7 +30,7 @@ class ReferenceNotFoundException(val reference: Reference<*, *, *>, val context:
 class MultipleMatchesException(val reference: Reference<*, *, *>, val matches: List<IrSymbol>) :
     RuntimeException("Multiple matching symbols found for reference $reference with the same signature: $matches")
 
-sealed class Reference<S : IrBindableSymbol<*, T>, T: IrDeclaration, R: ResolvedReference<S, T>> {
+sealed class Reference<S : IrBindableSymbol<*, T>, T : IrDeclaration, R : ResolvedReference<S, T>> {
     abstract val fqName: FqName
     abstract val signature: IdSignature.PublicSignature
 
@@ -62,7 +61,8 @@ sealed class Reference<S : IrBindableSymbol<*, T>, T: IrDeclaration, R: Resolved
 }
 
 //TODO use pluginContext.referenceTopLevel()?  Can use IdSignature.asPublic() for resolution.  Will it work with @PublishedAPI?
-open class ClassReference(override val fqName: FqName, override val signature: IdSignature.PublicSignature) : Reference<IrClassSymbol, IrClass, ResolvedClass>() {
+open class ClassReference(override val fqName: FqName, override val signature: IdSignature.PublicSignature) :
+    Reference<IrClassSymbol, IrClass, ResolvedClass>() {
     override fun doResolve(context: IrPluginContext): IrClassSymbol? = context.referenceClass(fqName)?.checkSignature()
 
     override fun getResolvedReference(symbol: IrClassSymbol): ResolvedClass = ResolvedClass(symbol, fqName)
@@ -88,22 +88,26 @@ open class ClassReference(override val fqName: FqName, override val signature: I
     }
 }
 
-data class TypealiasReference(override val fqName: FqName, override val signature: IdSignature.PublicSignature) : Reference<IrTypeAliasSymbol, IrTypeAlias, ResolvedTypealias>() {
+data class TypealiasReference(override val fqName: FqName, override val signature: IdSignature.PublicSignature) :
+    Reference<IrTypeAliasSymbol, IrTypeAlias, ResolvedTypealias>() {
     override fun doResolve(context: IrPluginContext): IrTypeAliasSymbol? = context.referenceTypeAlias(fqName)
     override fun getResolvedReference(symbol: IrTypeAliasSymbol): ResolvedTypealias = ResolvedTypealias(symbol, fqName)
 }
 
-data class ConstructorReference(override val fqName: FqName, override val signature: IdSignature.PublicSignature) : Reference<IrConstructorSymbol, IrConstructor, ResolvedConstructor>() {
+data class ConstructorReference(override val fqName: FqName, override val signature: IdSignature.PublicSignature) :
+    Reference<IrConstructorSymbol, IrConstructor, ResolvedConstructor>() {
     override fun doResolve(context: IrPluginContext): IrConstructorSymbol? = context.referenceConstructors(fqName).findWithSignature()
     override fun getResolvedReference(symbol: IrConstructorSymbol): ResolvedConstructor = ResolvedConstructor(symbol, fqName)
 }
 
-data class FunctionReference(override val fqName: FqName, override val signature: IdSignature.PublicSignature) : Reference<IrSimpleFunctionSymbol, IrSimpleFunction, ResolvedFunction>() {
+data class FunctionReference(override val fqName: FqName, override val signature: IdSignature.PublicSignature) :
+    Reference<IrSimpleFunctionSymbol, IrSimpleFunction, ResolvedFunction>() {
     override fun doResolve(context: IrPluginContext): IrSimpleFunctionSymbol? = context.referenceFunctions(fqName).findWithSignature()
     override fun getResolvedReference(symbol: IrSimpleFunctionSymbol): ResolvedFunction = ResolvedFunction(symbol, fqName)
 }
 
-data class PropertyReference(override val fqName: FqName, override val signature: IdSignature.PublicSignature) : Reference<IrPropertySymbol, IrProperty, ResolvedProperty>() {
+data class PropertyReference(override val fqName: FqName, override val signature: IdSignature.PublicSignature) :
+    Reference<IrPropertySymbol, IrProperty, ResolvedProperty>() {
     override fun doResolve(context: IrPluginContext): IrPropertySymbol? = context.referenceProperties(fqName).findWithSignature()
     override fun getResolvedReference(symbol: IrPropertySymbol): ResolvedProperty = ResolvedProperty(symbol, fqName)
 }

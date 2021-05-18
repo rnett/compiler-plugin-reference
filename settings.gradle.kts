@@ -1,4 +1,3 @@
-
 rootProject.name = "compiler-plugin-reference"
 
 include(
