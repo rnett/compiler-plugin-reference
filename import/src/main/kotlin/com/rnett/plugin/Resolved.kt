@@ -39,10 +39,9 @@ open class ResolvedClass(symbol: IrClassSymbol, fqName: FqName) : ResolvedRefere
     }
 }
 
-//TODO use properties?
 open class ResolvedTypealias(symbol: IrTypeAliasSymbol, fqName: FqName) :
     ResolvedReference<IrTypeAliasSymbol, IrTypeAlias>(symbol, fqName), IrTypeAliasSymbol by symbol {
-    val type: IrType get() = owner.expandedType
+    val expandedType: IrType get() = owner.expandedType
 
     override fun toString(): String {
         return "ResolvedTypealias(fqName=$fqName, symbol=$symbol)"

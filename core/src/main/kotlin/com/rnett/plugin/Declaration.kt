@@ -65,6 +65,9 @@ sealed class ExportDeclaration {
         val dispatchReceiver: Receiver?,
         val extensionReceivers: List<Receiver>,
         val typeParameters: List<TypeParameter>,
+        val hasGetter: Boolean,
+        val hasSetter: Boolean,
+        val hasField: Boolean,
         override val customName: String? = null
     ) : ExportDeclaration()
 
@@ -78,8 +81,7 @@ sealed class ExportDeclaration {
         val typeParameters: List<TypeParameter>,
         val valueParameters: List<Param>,
         override val customName: String? = null,
-    ) : ExportDeclaration() {
-    }
+    ) : ExportDeclaration()
 
     @Serializable
     data class Constructor(

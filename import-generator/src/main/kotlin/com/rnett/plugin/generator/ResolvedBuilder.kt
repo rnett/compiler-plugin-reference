@@ -4,6 +4,7 @@ import com.rnett.plugin.ExportDeclaration
 import com.rnett.plugin.ResolvedName
 import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.CodeBlock
+import com.squareup.kotlinpoet.CodeBlock.Builder
 import com.squareup.kotlinpoet.FunSpec
 import com.squareup.kotlinpoet.ParameterSpec
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
@@ -69,48 +70,6 @@ internal object ResolvedBuilder {
         }
     }
 
-    private fun ExportDeclaration.TypeParameter.classKdoc() = buildString {
-        append("`")
-        append(variance.prefix)
-        append(name)
-        if (supertypes.isNotEmpty()) {
-            append(" : ")
-            append(supertypes.joinToString(", "))
-        }
-        append("`")
-    }
-
-    private fun ExportDeclaration.Param.classKdoc() = buildString {
-        append("`")
-        if (varargs)
-            append("vararg ")
-        append("$name: $type")
-        if (optional)
-            append(" = ...")
-        append("`")
-    }
-
-    private fun ExportDeclaration.TypeParameter.callKdoc() = buildString {
-        append("`")
-        append(variance.prefix)
-        append("?")
-        if (supertypes.isNotEmpty()) {
-            append(" : ")
-            append(supertypes.joinToString(", "))
-        }
-        append("`")
-    }
-
-    private fun ExportDeclaration.Param.callKdoc() = buildString {
-        append("`")
-        if (varargs)
-            append("vararg ")
-        append("$type")
-        if (optional)
-            append(" = ...")
-        append("`")
-    }
-
     private fun addDeclaration(reference: String, name: String, declaration: ExportDeclaration): TypeSpec {
         val builder = TypeSpec.classBuilder(name)
         val kdoc = CodeBlock.builder()
@@ -131,16 +90,19 @@ internal object ResolvedBuilder {
         builder.addSuperclassConstructorParameter("%L.resolveSymbol(context)", reference)
         builder.addSuperclassConstructorParameter("%L.fqName", reference)
 
+        if (declaration is ExportDeclaration.Constructor) {
+            kdoc.addStatement("Constructs class %L", declaration.constructedClass.kdoc)
+            kdoc.add("\n")
+        }
+
+        declaration.buildTypeConstructor(builder, kdoc)
+
         when (declaration) {
-            is ExportDeclaration.Class -> declaration.buildClass(kdoc, builder)
-            is ExportDeclaration.Constructor -> declaration.buildConstructor(kdoc, builder)
-            is ExportDeclaration.Function -> declaration.buildFunction(kdoc, builder)
-            is ExportDeclaration.Property -> {
-
-            }
-            is ExportDeclaration.Typealias -> {
-
-            }
+            is ExportDeclaration.Class -> declaration.buildClass(builder, kdoc)
+            is ExportDeclaration.Constructor -> declaration.buildConstructor(builder, kdoc)
+            is ExportDeclaration.Function -> declaration.buildFunction(builder, kdoc)
+            is ExportDeclaration.Property -> declaration.buildProperty(builder, kdoc)
+            is ExportDeclaration.Typealias -> declaration.buildTypealias(builder, kdoc)
         }
 
         builder.addKdoc(kdoc.build())
@@ -148,74 +110,40 @@ internal object ResolvedBuilder {
         return builder.build()
     }
 
-    private fun ExportDeclaration.Class.buildClass(kdoc: CodeBlock.Builder, builder: TypeSpec.Builder) {
-        if (typeParameters.isNotEmpty()) {
-            kdoc.addStatement("Type parameters:")
-            typeParameters.forEach {
-                kdoc.addStatement("* %L", it.classKdoc())
-            }
-        }
+    //TODO call wrappers, i.e. to extract parameters.  Especially for annotations
 
-        if (typeParameters.isEmpty()) {
-            builder.addProperty(
-                PropertySpec.builder("type", References.IrType)
-                    .addKdoc("Get the class's type.")
-                    .getter(FunSpec.getterBuilder().addStatement("return owner.%M()", References.typeWith).build())
-                    .build()
-            )
-        } else {
-            builder.addFunction(buildTypeConstructor(false))
-            builder.addFunction(buildTypeConstructor(true))
-        }
-    }
-
-    private fun ExportDeclaration.Class.buildTypeConstructor(useArguments: Boolean): FunSpec {
-        val builder = FunSpec.builder("type")
-            .returns(References.IrSimpleType)
-        val kdoc = CodeBlock.builder().addStatement("Get the class's type.")
-
-        typeParameters.forEach {
-            val param = ParameterSpec.builder(it.name, if (useArguments) References.IrTypeArgument else References.IrType)
-            if (useArguments) {
-                param.defaultValue("%T", References.IrStarProjectionImpl)
-            }
-            builder.addParameter(param.build())
-            kdoc.addStatement("@param %L %L", it.name, it.callKdoc())
-        }
-
-        if (useArguments) {
-            builder.addStatement(
-                "return %M(listOf(%L))",
-                if (useArguments) References.typeWithArguments else References.typeWith,
-                typeParameters.joinToString { it.name })
-        } else {
-            builder.addStatement(
-                "return owner.%M(%L)",
-                References.typeWith,
-                typeParameters.joinToString { it.name })
-        }
-        builder.addKdoc(kdoc.build())
-        return builder.build()
-    }
-
-    private fun ExportDeclaration.Constructor.buildConstructor(kdoc: CodeBlock.Builder, builder: TypeSpec.Builder) {
-        kdoc.addStatement("Constructs class %L", constructedClass.kdoc)
-        kdoc.add("\n")
-        if (classTypeParams.isNotEmpty()) {
-            kdoc.addStatement("Class type parameters:")
-            classTypeParams.forEach {
-                kdoc.addStatement("* %L", it.classKdoc())
-            }
+    //TODO finish
+    //TODO return type builders for this, function, constructors
+    private fun ExportDeclaration.Property.buildProperty(builder: TypeSpec.Builder, kdoc: Builder) {
+        dispatchReceiver?.let {
+            kdoc.addStatement("Dispatch receiver: %L", it.type.kdoc)
             kdoc.add("\n")
         }
 
-        if (valueParameters.isNotEmpty()) {
-            kdoc.addStatement("Value parameters:")
-            valueParameters.forEach {
-                kdoc.addStatement("* %L", it.classKdoc())
+        if (extensionReceivers.isNotEmpty()) {
+            if (extensionReceivers.size > 1) {
+                error("Multiple receivers not yet supported")
             }
+            val extensionReceiver = extensionReceivers.single()
+            kdoc.addStatement("Extension receiver: %L", extensionReceiver.type.kdoc)
             kdoc.add("\n")
         }
+
+        kdoc.addStatement("Type: %L", returnType.kdoc)
+
+
+    }
+
+    private fun ExportDeclaration.Typealias.buildTypealias(builder: TypeSpec.Builder, kdoc: Builder) {
+    }
+
+    private fun ExportDeclaration.Class.buildClass(builder: TypeSpec.Builder, kdoc: Builder) {
+
+    }
+
+    private fun ExportDeclaration.Constructor.buildConstructor(builder: TypeSpec.Builder, kdoc: Builder) {
+
+        kdoc.addListBlock("Value parameters:", valueParameters) { it.classKdoc() }
 
         val call = FunSpec.builder("call")
         this.buildConstructorCall(call, false)
@@ -228,33 +156,12 @@ internal object ResolvedBuilder {
         }
     }
 
-    private fun ExportDeclaration.Constructor.buildConstructorCall(call: FunSpec.Builder, useVararg: Boolean) {
-        call.returns(References.IrConstructorCall)
-        call.addParameter("builder", References.IrBuilderWithScope)
-
-        val body = CodeBlock.builder()
-            .beginControlFlow("builder.%M(this, listOf(%L)).apply{", References.irCallConstructor, classTypeParams.joinToString(", ") { it.name })
-        val kdoc = CodeBlock.builder().addStatement("Call the constructor").add("\n")
-
-        classTypeParams.forEach {
-            call.addParameter(it.name, References.IrType)
-            kdoc.addStatement("@param %L %L", it.name, it.callKdoc())
-        }
-
-        addValueParameters(valueParameters, useVararg, call, body, kdoc)
-
-        kdoc.addStatement("@return %L", constructedClass.kdoc)
-        call.addKdoc(kdoc.build())
-        call.addStatement("return %L", body.endControlFlow().build())
-
-    }
-
     private fun addValueParameters(
         valueParameters: List<ExportDeclaration.Param>,
         useVararg: Boolean,
         call: FunSpec.Builder,
-        body: CodeBlock.Builder,
-        kdoc: CodeBlock.Builder
+        body: Builder,
+        kdoc: Builder
     ) {
         valueParameters.forEach {
             val (value, baseType) = if (it.varargs && useVararg) {
@@ -282,18 +189,31 @@ internal object ResolvedBuilder {
         }
     }
 
-    private fun ExportDeclaration.Function.buildFunction(
-        kdoc: CodeBlock.Builder,
-        builder: TypeSpec.Builder
-    ) {
-        if (typeParameters.isNotEmpty()) {
-            kdoc.addStatement("Type parameters:")
-            typeParameters.forEach {
-                kdoc.addStatement("* %L", it.classKdoc())
-            }
-            kdoc.add("\n")
+    private fun ExportDeclaration.Constructor.buildConstructorCall(call: FunSpec.Builder, useVararg: Boolean) {
+        call.returns(References.IrConstructorCall)
+        call.addParameter("builder", References.IrBuilderWithScope)
+
+        val body = CodeBlock.builder()
+            .beginControlFlow("builder.%M(this, listOf(%L)).apply{", References.irCallConstructor, classTypeParams.joinToString(", ") { it.name })
+        val kdoc = CodeBlock.builder().addStatement("Call the constructor").add("\n")
+
+        classTypeParams.forEach {
+            call.addParameter(it.name, References.IrType)
+            kdoc.addStatement("@param %L %L", it.name, it.callKdoc())
         }
 
+        addValueParameters(valueParameters, useVararg, call, body, kdoc)
+
+        kdoc.addStatement("@return %L", constructedClass.kdoc)
+        call.addKdoc(kdoc.build())
+        call.addStatement("return %L", body.endControlFlow().build())
+
+    }
+
+    private fun ExportDeclaration.Function.buildFunction(
+        builder: TypeSpec.Builder,
+        kdoc: CodeBlock.Builder
+    ) {
         dispatchReceiver?.let {
             kdoc.addStatement("Dispatch receiver: %L", it.type.kdoc)
             kdoc.add("\n")
@@ -308,13 +228,7 @@ internal object ResolvedBuilder {
             kdoc.add("\n")
         }
 
-        if (valueParameters.isNotEmpty()) {
-            kdoc.addStatement("Value parameters:")
-            valueParameters.forEach {
-                kdoc.addStatement("* %L", it.classKdoc())
-            }
-            kdoc.add("\n")
-        }
+        kdoc.addListBlock("Value parameters:", valueParameters) { it.classKdoc() }
 
         kdoc.addStatement("Return type: %L", returnType.kdoc)
 

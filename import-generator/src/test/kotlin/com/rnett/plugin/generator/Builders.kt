@@ -50,7 +50,7 @@ interface NamespaceBuilder {
     fun childName(name: String): ResolvedName
 
     fun Property(name: String) =
-        Declaration(ExportDeclaration.Property(childName(name), Signature.None, TypeString.None, null, emptyList(), emptyList()))
+        Declaration(ExportDeclaration.Property(childName(name), Signature.None, TypeString.None, null, emptyList(), emptyList(), false, false, false))
 
     fun Function(name: String) =
         Declaration(ExportDeclaration.Function(childName(name), Signature.None, TypeString.None, null, emptyList(), emptyList(), emptyList()))

@@ -21,6 +21,9 @@ class WithTypeParams<T : Number> @PluginExport constructor(val n: T) {
 typealias TestTypealias = IllegalStateException
 
 @PluginExport
+typealias TestTypealiasWithArg<T> = List<T>
+
+@PluginExport
 fun <T> Int.testTopLevelFunction(req: T, opt: Double? = 2.0, vararg t: String): Int {
     return 2
 }
@@ -36,3 +39,7 @@ internal fun testPublishedApi() {
 internal fun testPublishedApi(t: Int) {
 
 }
+
+@PluginExport
+val <T : Number> T.testPropWithTypeVar
+    get() = toInt()

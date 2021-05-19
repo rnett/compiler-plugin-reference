@@ -34,6 +34,7 @@ import org.jetbrains.kotlin.ir.types.IrDynamicType
 import org.jetbrains.kotlin.ir.types.IrErrorType
 import org.jetbrains.kotlin.ir.types.IrSimpleType
 import org.jetbrains.kotlin.ir.types.IrType
+import org.jetbrains.kotlin.ir.types.isNullableAny
 import org.jetbrains.kotlin.ir.util.IdSignature
 import org.jetbrains.kotlin.ir.util.constructedClass
 import org.jetbrains.kotlin.ir.util.constructedClassType
@@ -139,7 +140,11 @@ class PluginExporter(val context: IrPluginContext, val messageCollector: Message
     }
 
     fun IrTypeParameter.toTypeParameter() =
-        ExportDeclaration.TypeParameter(name.asString(), index, variance.toVariance(), this.superTypes.map { it.toTypeString() })
+        ExportDeclaration.TypeParameter(
+            name.asString(),
+            index,
+            variance.toVariance(),
+            this.superTypes.filterNot { it.isNullableAny() }.map { it.toTypeString() })
 
     fun IrValueParameter.toReceiver() = ExportDeclaration.Receiver(type.typeNic, type.toTypeString())
 
@@ -191,6 +196,9 @@ class PluginExporter(val context: IrPluginContext, val messageCollector: Message
             descriptor.dispatchReceiverParameter?.toReceiver(),
             listOfNotNull(descriptor.extensionReceiverParameter).map { it.toReceiver() },
             descriptor.typeParameters.map { it.toTypeParameter() },
+            getter != null,
+            setter != null,
+            backingField != null,
             displayName
         )
     }

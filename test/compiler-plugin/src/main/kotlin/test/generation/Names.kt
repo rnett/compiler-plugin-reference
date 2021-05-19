@@ -26,6 +26,8 @@ import org.jetbrains.kotlin.ir.types.impl.IrStarProjectionImpl
 import org.jetbrains.kotlin.ir.types.typeWith
 import org.jetbrains.kotlin.ir.types.typeWithArguments
 import org.jetbrains.kotlin.ir.util.IdSignature
+import org.jetbrains.kotlin.ir.util.constructedClass
+import org.jetbrains.kotlin.ir.util.constructedClassType
 import org.jetbrains.kotlin.ir.util.substitute
 import org.jetbrains.kotlin.ir.util.typeSubstitutionMap
 import org.jetbrains.kotlin.name.FqName
@@ -36,6 +38,21 @@ public object Names {
             TypealiasReference(
                 FqName("tester.TestTypealias"),
                 IdSignature.PublicSignature("tester", "TestTypealias", null, 0)
+            )
+
+        public val TestTypealiasWithArg: TypealiasReference =
+            TypealiasReference(
+                FqName("tester.TestTypealiasWithArg"),
+                IdSignature.PublicSignature("tester", "TestTypealiasWithArg", null, 0)
+            )
+
+        public val testPropWithTypeVar: PropertyReference =
+            PropertyReference(
+                FqName("tester.testPropWithTypeVar"),
+                IdSignature.PublicSignature(
+                    "tester", "testPropWithTypeVar", -2301283503845253114,
+                    0
+                )
             )
 
         public val testPublishedApi: FunctionReference =
@@ -121,8 +138,14 @@ public class ResolvedNames(
         public val TestTypealias: _TestTypealias =
             test.generation.ResolvedNames._tester._TestTypealias(context)
 
+        public val TestTypealiasWithArg: _TestTypealiasWithArg =
+            test.generation.ResolvedNames._tester._TestTypealiasWithArg(context)
+
         public val WithTypeParams: _WithTypeParams =
             test.generation.ResolvedNames._tester._WithTypeParams(context)
+
+        public val testPropWithTypeVar: _testPropWithTypeVar =
+            test.generation.ResolvedNames._tester._testPropWithTypeVar(context)
 
         public val testPublishedApi: _testPublishedApi =
             test.generation.ResolvedNames._tester._testPublishedApi(context)
@@ -145,9 +168,9 @@ public class ResolvedNames(
         ) {
             /**
              * Get the class's type.
+             *
              */
-            public val type: IrType
-                get() = owner.typeWith()
+            public val type: IrSimpleType = owner.typeWith()
 
             public val ctor: _ctor = test.generation.ResolvedNames._tester._TestClass._ctor(context)
 
@@ -158,6 +181,12 @@ public class ResolvedNames(
                 test.generation.ResolvedNames._tester._TestClass._NestedClass(context)
 
             public val n: _n = test.generation.ResolvedNames._tester._TestClass._n(context)
+
+            /**
+             * Get the class's type.
+             *
+             */
+            public fun type(): IrSimpleType = typeWithArguments(listOf());
 
             /**
              * Resolved reference to `tester.TestClass.<init>`
@@ -174,6 +203,12 @@ public class ResolvedNames(
                 Names.tester.TestClass.ctor.resolveSymbol(context),
                 Names.tester.TestClass.ctor.fqName
             ) {
+                /**
+                 * Get the constructed type.
+                 *
+                 */
+                public val constructedType: IrType = owner.constructedClassType
+
                 /**
                  * Call the constructor
                  *
@@ -203,6 +238,12 @@ public class ResolvedNames(
                 Names.tester.TestClass.fromString.fqName
             ) {
                 /**
+                 * Get the constructed type.
+                 *
+                 */
+                public val constructedType: IrType = owner.constructedClassType
+
+                /**
                  * Call the constructor
                  *
                  * @param s `kotlin.String`
@@ -227,21 +268,36 @@ public class ResolvedNames(
             ) {
                 /**
                  * Get the class's type.
+                 *
                  */
-                public val type: IrType
-                    get() = owner.typeWith()
+                public val type: IrSimpleType = owner.typeWith()
+
+                /**
+                 * Get the class's type.
+                 *
+                 */
+                public fun type(): IrSimpleType = typeWithArguments(listOf());
             }
 
             /**
              * Resolved reference to `tester.TestClass.n`
              *
+             * Dispatch receiver: `tester.TestClass`
+             *
+             * Type: `kotlin.Int`
              */
             public class _n(
                 context: IrPluginContext
             ) : ResolvedProperty(
                 Names.tester.TestClass.n.resolveSymbol(context),
                 Names.tester.TestClass.n.fqName
-            )
+            ) {
+                /**
+                 * Get the property's type.
+                 *
+                 */
+                public val type: IrType = (owner.getter?.returnType ?: owner.backingField?.type)!!
+            }
         }
 
         /**
@@ -253,13 +309,45 @@ public class ResolvedNames(
         ) : ResolvedTypealias(
             Names.tester.TestTypealias.resolveSymbol(context),
             Names.tester.TestTypealias.fqName
-        )
+        ) {
+            /**
+             * Get the expanded type.
+             *
+             */
+            public val type: IrType = owner.expandedType
+        }
+
+        /**
+         * Resolved reference to `tester.TestTypealiasWithArg`
+         *
+         * Type parameters:
+         * * `T`
+         *
+         */
+        public class _TestTypealiasWithArg(
+            context: IrPluginContext
+        ) : ResolvedTypealias(
+            Names.tester.TestTypealiasWithArg.resolveSymbol(context),
+            Names.tester.TestTypealiasWithArg.fqName
+        ) {
+            /**
+             * Get the expanded type.
+             *
+             *
+             * @param T `?`
+             */
+            public fun type(T: IrType): IrType = owner.expandedType.substitute(
+                owner.typeParameters,
+                listOf(T)
+            )
+        }
 
         /**
          * Resolved reference to `tester.WithTypeParams`
          *
          * Type parameters:
          * * `T : kotlin.Number`
+         *
          */
         public class _WithTypeParams(
             context: IrPluginContext
@@ -272,16 +360,20 @@ public class ResolvedNames(
 
             /**
              * Get the class's type.
+             *
+             *
              * @param T `? : kotlin.Number`
              */
             public fun type(T: IrType): IrSimpleType = owner.typeWith(T)
 
             /**
              * Get the class's type.
+             *
+             *
              * @param T `? : kotlin.Number`
              */
             public fun type(T: IrTypeArgument = IrStarProjectionImpl): IrSimpleType =
-                typeWithArguments(listOf(T))
+                typeWithArguments(listOf(T));
 
             /**
              * Resolved reference to `tester.WithTypeParams.<init>`
@@ -302,6 +394,18 @@ public class ResolvedNames(
                 Names.tester.WithTypeParams.ctor.fqName
             ) {
                 /**
+                 * Get the constructed type.
+                 *
+                 *
+                 * @param T `? : kotlin.Number`
+                 */
+                public fun constructedType(T: IrType): IrType =
+                    owner.constructedClassType.substitute(
+                        owner.constructedClass.typeParameters,
+                        listOf(T)
+                    )
+
+                /**
                  * Call the constructor
                  *
                  * @param T `? : kotlin.Number`
@@ -320,6 +424,32 @@ public class ResolvedNames(
         }
 
         /**
+         * Resolved reference to `tester.testPropWithTypeVar`
+         *
+         * Type parameters:
+         * * `T : kotlin.Number`
+         *
+         * Extension receiver: `T of tester.<get-testPropWithTypeVar>`
+         *
+         * Type: `kotlin.Int`
+         */
+        public class _testPropWithTypeVar(
+            context: IrPluginContext
+        ) : ResolvedProperty(
+            Names.tester.testPropWithTypeVar.resolveSymbol(context),
+            Names.tester.testPropWithTypeVar.fqName
+        ) {
+            /**
+             * Get the property's type.
+             *
+             *
+             * @param T `? : kotlin.Number`
+             */
+            public fun type(T: IrType): IrType =
+                (owner.getter?.returnType ?: owner.backingField?.type)!!.substitute(owner.getter!!.typeParameters, listOf(T))
+        }
+
+        /**
          * Resolved reference to `tester.testPublishedApi`
          *
          * Return type: `kotlin.Unit`
@@ -330,6 +460,12 @@ public class ResolvedNames(
             Names.tester.testPublishedApi.resolveSymbol(context),
             Names.tester.testPublishedApi.fqName
         ) {
+            /**
+             * Get the return type.
+             *
+             */
+            public val returnType: IrType = owner.returnType
+
             /**
              * Call the function
              *
@@ -356,6 +492,12 @@ public class ResolvedNames(
             Names.tester.testPublishedApi_1.fqName
         ) {
             /**
+             * Get the return type.
+             *
+             */
+            public val returnType: IrType = owner.returnType
+
+            /**
              * Call the function
              *
              * @param t `kotlin.Int`
@@ -373,7 +515,7 @@ public class ResolvedNames(
          * Resolved reference to `tester.testTopLevelFunction`
          *
          * Type parameters:
-         * * `T : kotlin.Any?`
+         * * `T`
          *
          * Extension receiver: `kotlin.Int`
          *
@@ -391,9 +533,18 @@ public class ResolvedNames(
             Names.tester.testTopLevelFunction.fqName
         ) {
             /**
+             * Get the return type.
+             *
+             *
+             * @param T `?`
+             */
+            public fun returnType(T: IrType): IrType =
+                owner.returnType.substitute(owner.typeParameters, listOf(T))
+
+            /**
              * Call the function
              *
-             * @param T `? : kotlin.Any?`
+             * @param T `?`
              * @param extensionReceiver `kotlin.Int`
              * @param req `T of tester.testTopLevelFunction`
              * @param opt `kotlin.Double? = ...`
@@ -422,7 +573,7 @@ public class ResolvedNames(
             /**
              * Call the function
              *
-             * @param T `? : kotlin.Any?`
+             * @param T `?`
              * @param extensionReceiver `kotlin.Int`
              * @param req `T of tester.testTopLevelFunction`
              * @param opt `kotlin.Double? = ...`

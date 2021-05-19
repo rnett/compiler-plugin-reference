@@ -40,4 +40,6 @@ object References {
     val substituteTypes = MemberName("org.jetbrains.kotlin.ir.util", "substitute")
     val typeWith = MemberName("org.jetbrains.kotlin.ir.types", "typeWith")
     val typeWithArguments = MemberName("org.jetbrains.kotlin.ir.types", "typeWithArguments")
+    val constructedClass = MemberName("org.jetbrains.kotlin.ir.util", "constructedClass")
+    val constructedClassType = MemberName("org.jetbrains.kotlin.ir.util", "constructedClassType")
 }
