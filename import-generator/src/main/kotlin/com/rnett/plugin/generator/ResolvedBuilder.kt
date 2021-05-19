@@ -1,11 +1,11 @@
 package com.rnett.plugin.generator
 
 import com.rnett.plugin.ExportDeclaration
-import com.rnett.plugin.ResolvedName
 import com.rnett.plugin.TypeString
 import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.CodeBlock
 import com.squareup.kotlinpoet.FunSpec
+import com.squareup.kotlinpoet.KModifier
 import com.squareup.kotlinpoet.ParameterSpec
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import com.squareup.kotlinpoet.PropertySpec
@@ -14,99 +14,66 @@ import com.squareup.kotlinpoet.TypeSpec
 import com.squareup.kotlinpoet.asTypeName
 
 internal object ResolvedBuilder {
-    internal fun buildResolved(
-        builder: TypeSpec.Builder,
-        packageName: String,
-        className: String,
-        referenceClassName: String,
-        declarations: DeclarationTree
-    ) {
-        builder.addProperty(PropertySpec.builder("context", References.IrPluginContext).initializer("context").build())
-        builder.primaryConstructor(FunSpec.constructorBuilder().addParameter("context", References.IrPluginContext).build())
+    fun build(builder: TypeSpec.Builder, current: ClassName, declarationTree: DeclarationTree) {
+        builder.addContextProperty()
 
-        addResolvedTree(builder, ResolvedName(referenceClassName), ClassName(packageName, className), declarations)
-    }
+        if (declarationTree is DeclarationTree.Package) {
+            builder.addContextConstructor()
+        } // added in build otherwise
 
-    private fun addResolvedTree(builder: TypeSpec.Builder, parentReference: ResolvedName, parentClass: ClassName, declarationTree: DeclarationTree) {
-        val reference = parentReference.child(declarationTree.displayName)
-        when (declarationTree) {
-            is DeclarationTree.Package -> {
-                val name = "_" + declarationTree.displayName
-                if (declarationTree.isRoot) {
-                    declarationTree.children.forEach {
-                        addResolvedTree(builder, parentReference, parentClass, it)
-                        val type = parentClass.nestedClass(name).nestedClass("_" + it.displayName)
-                        builder.addProperty(PropertySpec.builder(declarationTree.displayName, type).initializer("%L(context)", type).build())
-                    }
-                } else {
-                    val newReferences = TypeSpec.classBuilder(name)
-                    newReferences.primaryConstructor(FunSpec.constructorBuilder().addParameter("context", References.IrPluginContext).build())
+        declarationTree.declaration?.let { builder.build(it) }
 
-                    declarationTree.children.forEach { addResolvedTree(newReferences, reference, parentClass.nestedClass(name), it) }
-
-                    val type = parentClass.nestedClass(name)
-                    builder.addProperty(PropertySpec.builder(declarationTree.displayName, type).initializer("%L(context)", type).build())
-
-                    builder.addType(newReferences.build())
-                }
-            }
-            is DeclarationTree.Class -> {
-                val name = "_" + declarationTree.displayName
-                val selfType = parentClass.nestedClass(name)
-                val type = addDeclaration(reference.fqName, name, declarationTree.declaration).toBuilder()
-
-                declarationTree.children.forEach { addResolvedTree(type, reference, selfType, it) }
-
-                builder.addType(type.build())
-                builder.addProperty(PropertySpec.builder(declarationTree.displayName, selfType).initializer("%L(context)", selfType).build())
-            }
-            is DeclarationTree.Leaf -> {
-                val name = "_" + declarationTree.displayName
-                val selfType = parentClass.nestedClass(name)
-                builder.addType(addDeclaration(reference.fqName, name, declarationTree.declaration))
-                builder.addProperty(PropertySpec.builder(declarationTree.displayName, selfType).initializer("%L(context)", selfType).build())
-            }
+        declarationTree.children.forEach {
+            val type = current.nestedClass(it.displayName)
+            builder.addFunction(
+                FunSpec.builder(it.displayName)
+                    .returns(type)
+                    .addStatement("return %T(%L)", type, contextPropName)
+                    .build()
+            )
         }
     }
 
-    private fun addDeclaration(reference: String, name: String, declaration: ExportDeclaration): TypeSpec {
-        val builder = TypeSpec.classBuilder(name)
+    private fun TypeSpec.Builder.build(declaration: ExportDeclaration) {
         val kdoc = CodeBlock.builder()
         kdoc.addStatement("Resolved reference to `${declaration.fqName.fqName}`")
         kdoc.add("\n")
 
-        builder.primaryConstructor(FunSpec.constructorBuilder().addParameter("context", References.IrPluginContext).build())
+        primaryConstructor(
+            FunSpec.constructorBuilder()
+                .addContextParameter()
+                .addModifiers(KModifier.PRIVATE)
+                .addParameter("symbol", References.symbolType(declaration))
+                .build()
+        )
 
-        val supertype = when (declaration) {
-            is ExportDeclaration.Class -> References.ResolvedClass
-            is ExportDeclaration.Constructor -> References.ResolvedConstructor
-            is ExportDeclaration.Function -> References.ResolvedFunction
-            is ExportDeclaration.Property -> References.ResolvedProperty
-            is ExportDeclaration.Typealias -> References.ResolvedTypealias
-        }
+        addFunction(
+            FunSpec.constructorBuilder()
+                .addParameter("context", References.IrPluginContext)
+                .callThisConstructor("context", "resolveSymbol(context)")
+                .build()
+        )
 
-        builder.superclass(supertype)
-        builder.addSuperclassConstructorParameter("%L.resolveSymbol(context)", reference)
-        builder.addSuperclassConstructorParameter("%L.fqName", reference)
+        superclass(References.resolvedType(declaration))
+        addSuperclassConstructorParameter("symbol")
+        addSuperclassConstructorParameter("fqName")
 
         if (declaration is ExportDeclaration.Constructor) {
             kdoc.addStatement("Constructs class %L", declaration.constructedClass.kdoc)
             kdoc.add("\n")
         }
 
-        declaration.buildTypeConstructor(builder, kdoc)
+        declaration.buildTypeConstructor(this, kdoc)
 
         when (declaration) {
-            is ExportDeclaration.Class -> declaration.buildClass(builder, kdoc)
-            is ExportDeclaration.Constructor -> declaration.buildConstructor(builder, kdoc)
-            is ExportDeclaration.Function -> declaration.buildFunction(builder, kdoc)
-            is ExportDeclaration.Property -> declaration.buildProperty(builder, kdoc)
-            is ExportDeclaration.Typealias -> declaration.buildTypealias(builder, kdoc)
+            is ExportDeclaration.Class -> declaration.buildClass(this, kdoc)
+            is ExportDeclaration.Constructor -> declaration.buildConstructor(this, kdoc)
+            is ExportDeclaration.Function -> declaration.buildFunction(this, kdoc)
+            is ExportDeclaration.Property -> declaration.buildProperty(this, kdoc)
+            is ExportDeclaration.Typealias -> declaration.buildTypealias(this, kdoc)
         }
 
-        builder.addKdoc(kdoc.build())
-
-        return builder.build()
+        addKdoc(kdoc.build())
     }
 
     //TODO call wrappers, i.e. to extract parameters.  Especially for annotations
@@ -254,7 +221,6 @@ internal object ResolvedBuilder {
         }
     }
 
-    //TODO builder/lambda for lambda arguments
     private fun ExportDeclaration.Function.buildFunctionCall(useVararg: Boolean): FunSpec {
         return buildFunctionCall(
             if (useVararg) "callVararg" else "call",

@@ -17,7 +17,7 @@ sealed class DeclarationTree(
     val allDeclarations: List<ExportDeclaration> get() = listOfNotNull(declaration) + children.flatMap { it.allDeclarations }
 
     override fun toString(): String {
-        return fqName.fqName + (if (children.isNotEmpty()) "\n" else "") + children.joinToString("\n").prependIndent("    ")
+        return fqName.fqName + " : $displayName" + (if (children.isNotEmpty()) "\n" else "") + children.joinToString("\n").prependIndent("    ")
     }
 
     override fun equals(other: Any?): Boolean {
@@ -73,7 +73,7 @@ sealed class DeclarationTree(
         override fun withChildren(children: List<DeclarationTree>) = this
     }
 
-    fun collapsePackages(): DeclarationTree {
+    private fun collapsePackages(): DeclarationTree {
         if (children.size == 1) {
             val child = children[0]
             if (child is Class || child is Package)
@@ -82,22 +82,23 @@ sealed class DeclarationTree(
         return this
     }
 
-    fun disambiguateOverloads(): DeclarationTree {
+    private fun disambiguateOverloads(): DeclarationTree {
         val nameUsages = mutableMapOf<String, Int>()
         return withChildren(children.map {
-            val count = nameUsages.getOrPut(it.displayName) { 0 }
+            val count = nameUsages.getOrElse(it.displayName) { 0 }
+            nameUsages[it.displayName] = count + 1
+
             if (count == 0)
                 it
             else {
                 it.withName(it.displayName + "_$count")
-            }.also {
-                nameUsages[it.displayName] = count + 1
             }
-        })
+        }.map { it.disambiguateOverloads() }
+        )
 
     }
 
-    fun finalize() = collapsePackages().disambiguateOverloads()
+    fun finalize() = this.disambiguateOverloads()
 
     companion object {
         operator fun invoke(declarations: Iterable<ExportDeclaration>): DeclarationTree {

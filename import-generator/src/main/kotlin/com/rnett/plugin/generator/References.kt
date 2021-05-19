@@ -1,5 +1,6 @@
 package com.rnett.plugin.generator
 
+import com.rnett.plugin.ExportDeclaration
 import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.MemberName
 import com.squareup.kotlinpoet.STRING
@@ -24,10 +25,16 @@ object References {
     val IrPluginContext = ClassName.bestGuess("org.jetbrains.kotlin.backend.common.extensions.IrPluginContext")
     val IrBuilderWithScope = ClassName.bestGuess("org.jetbrains.kotlin.ir.builders.IrBuilderWithScope")
 
-    val IrType = ClassName.bestGuess("org.jetbrains.kotlin.ir.types.IrType")
-    val IrSimpleType = ClassName.bestGuess("org.jetbrains.kotlin.ir.types.IrSimpleType")
+
     val IrSimpleFunctionSymbol = ClassName.bestGuess("org.jetbrains.kotlin.ir.symbols.IrSimpleFunctionSymbol")
     val IrFieldSymbol = ClassName.bestGuess("org.jetbrains.kotlin.ir.symbols.IrFieldSymbol")
+    val IrClassSymbol = ClassName.bestGuess("org.jetbrains.kotlin.ir.symbols.IrClassSymbol")
+    val IrTypeAliasSymbol = ClassName.bestGuess("org.jetbrains.kotlin.ir.symbols.IrTypeAliasSymbol")
+    val IrPropertySymbol = ClassName.bestGuess("org.jetbrains.kotlin.ir.symbols.IrPropertySymbol")
+    val IrConstructorSymbol = ClassName.bestGuess("org.jetbrains.kotlin.ir.symbols.IrConstructorSymbol")
+
+    val IrType = ClassName.bestGuess("org.jetbrains.kotlin.ir.types.IrType")
+    val IrSimpleType = ClassName.bestGuess("org.jetbrains.kotlin.ir.types.IrSimpleType")
     val IrTypeArgument = ClassName.bestGuess("org.jetbrains.kotlin.ir.types.IrTypeArgument")
     val IrExpression = ClassName.bestGuess("org.jetbrains.kotlin.ir.expressions.IrExpression")
     val IrCall = ClassName.bestGuess("org.jetbrains.kotlin.ir.expressions.IrCall")
@@ -44,4 +51,28 @@ object References {
     val typeWithArguments = MemberName("org.jetbrains.kotlin.ir.types", "typeWithArguments")
     val constructedClass = MemberName("org.jetbrains.kotlin.ir.util", "constructedClass")
     val constructedClassType = MemberName("org.jetbrains.kotlin.ir.util", "constructedClassType")
+
+    fun referenceType(declaration: ExportDeclaration): ClassName = when (declaration) {
+        is ExportDeclaration.Class -> ClassReference
+        is ExportDeclaration.Constructor -> ConstructorReference
+        is ExportDeclaration.Function -> FunctionReference
+        is ExportDeclaration.Property -> PropertyReference
+        is ExportDeclaration.Typealias -> TypealiasReference
+    }
+
+    fun resolvedType(declaration: ExportDeclaration): ClassName = when (declaration) {
+        is ExportDeclaration.Class -> ResolvedClass
+        is ExportDeclaration.Constructor -> ResolvedConstructor
+        is ExportDeclaration.Function -> ResolvedFunction
+        is ExportDeclaration.Property -> ResolvedProperty
+        is ExportDeclaration.Typealias -> ResolvedTypealias
+    }
+
+    fun symbolType(declaration: ExportDeclaration): ClassName = when (declaration) {
+        is ExportDeclaration.Class -> IrClassSymbol
+        is ExportDeclaration.Constructor -> IrConstructorSymbol
+        is ExportDeclaration.Function -> IrSimpleFunctionSymbol
+        is ExportDeclaration.Property -> IrPropertySymbol
+        is ExportDeclaration.Typealias -> IrTypeAliasSymbol
+    }
 }

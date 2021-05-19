@@ -19,8 +19,12 @@ import org.jetbrains.kotlin.ir.builders.irVararg
 import org.jetbrains.kotlin.ir.expressions.IrCall
 import org.jetbrains.kotlin.ir.expressions.IrConstructorCall
 import org.jetbrains.kotlin.ir.expressions.IrExpression
+import org.jetbrains.kotlin.ir.symbols.IrClassSymbol
+import org.jetbrains.kotlin.ir.symbols.IrConstructorSymbol
 import org.jetbrains.kotlin.ir.symbols.IrFieldSymbol
+import org.jetbrains.kotlin.ir.symbols.IrPropertySymbol
 import org.jetbrains.kotlin.ir.symbols.IrSimpleFunctionSymbol
+import org.jetbrains.kotlin.ir.symbols.IrTypeAliasSymbol
 import org.jetbrains.kotlin.ir.types.IrSimpleType
 import org.jetbrains.kotlin.ir.types.IrType
 import org.jetbrains.kotlin.ir.types.IrTypeArgument
@@ -34,635 +38,776 @@ import org.jetbrains.kotlin.ir.util.substitute
 import org.jetbrains.kotlin.ir.util.typeSubstitutionMap
 import org.jetbrains.kotlin.name.FqName
 
-public object Names {
-    public object tester {
-        public val TestTypealias: TypealiasReference =
-            TypealiasReference(
-                FqName("tester.TestTypealias"),
-                IdSignature.PublicSignature("tester", "TestTypealias", null, 0)
-            )
-
-        public val TestTypealiasWithArg: TypealiasReference =
-            TypealiasReference(
-                FqName("tester.TestTypealiasWithArg"),
-                IdSignature.PublicSignature("tester", "TestTypealiasWithArg", null, 0)
-            )
-
-        public val testPropWithTypeVar: PropertyReference =
-            PropertyReference(
-                FqName("tester.testPropWithTypeVar"),
-                IdSignature.PublicSignature(
-                    "tester", "testPropWithTypeVar", -2301283503845253114,
-                    0
-                )
-            )
-
-        public val testPublishedApi: FunctionReference =
-            FunctionReference(
-                FqName("tester.testPublishedApi"),
-                IdSignature.PublicSignature("tester", "testPublishedApi", 5159344213406223961, 0)
-            )
-
-        public val testPublishedApi_1: FunctionReference =
-            FunctionReference(
-                FqName("tester.testPublishedApi"),
-                IdSignature.PublicSignature("tester", "testPublishedApi", 1731966692884449248, 0)
-            )
-
-        public val testTopLevelFunction: FunctionReference =
-            FunctionReference(
-                FqName("tester.testTopLevelFunction"),
-                IdSignature.PublicSignature(
-                    "tester", "testTopLevelFunction", -3918369520275516103,
-                    0
-                )
-            )
-
-        public object TestClass : ClassReference(
-            FqName("tester.TestClass"),
-            IdSignature.PublicSignature("tester", "TestClass", null, 0)
-        ) {
-            public val ctor: ConstructorReference = ConstructorReference(
-                FqName("tester.TestClass"),
-                IdSignature.PublicSignature(
-                    "tester", "TestClass.<init>", -5182794243525578284,
-                    0
-                )
-            )
-
-            public val fromString: ConstructorReference =
-                ConstructorReference(
-                    FqName("tester.TestClass"),
-                    IdSignature.PublicSignature(
-                        "tester", "TestClass.<init>", 1280618353163213788,
-                        0
-                    )
-                )
-
-            public val NestedClass: ClassReference =
-                ClassReference(
-                    FqName("tester.TestClass.NestedClass"),
-                    IdSignature.PublicSignature("tester", "TestClass.NestedClass", null, 0)
-                )
-
-            public val n: PropertyReference = PropertyReference(
-                FqName("tester.TestClass.n"),
-                IdSignature.PublicSignature("tester", "TestClass.n", -1061662854873377138, 0)
-            )
-        }
-
-        public object WithTypeParams : ClassReference(
-            FqName("tester.WithTypeParams"),
-            IdSignature.PublicSignature("tester", "WithTypeParams", null, 0)
-        ) {
-            public val ctor: ConstructorReference =
-                ConstructorReference(
-                    FqName("tester.WithTypeParams"),
-                    IdSignature.PublicSignature(
-                        "tester",
-                        "WithTypeParams.<init>", -8731461708390519279, 0
-                    )
-                )
-        }
-    }
-}
-
-public class ResolvedNames(
-    public val context: IrPluginContext
+public class Names(
+    private val _context: IrPluginContext
 ) {
-    public val tester: _tester = test.generation.ResolvedNames._tester(context)
+    public fun tester(): tester = tester(_context)
 
-    public class _tester(
-        context: IrPluginContext
+    public class tester(
+        private val _context: IrPluginContext
     ) {
-        public val TestClass: _TestClass = test.generation.ResolvedNames._tester._TestClass(context)
+        public fun second(): second = second(_context)
 
-        public val TestTypealias: _TestTypealias =
-            test.generation.ResolvedNames._tester._TestTypealias(context)
-
-        public val TestTypealiasWithArg: _TestTypealiasWithArg =
-            test.generation.ResolvedNames._tester._TestTypealiasWithArg(context)
-
-        public val WithTypeParams: _WithTypeParams =
-            test.generation.ResolvedNames._tester._WithTypeParams(context)
-
-        public val testPropWithTypeVar: _testPropWithTypeVar =
-            test.generation.ResolvedNames._tester._testPropWithTypeVar(context)
-
-        public val testPublishedApi: _testPublishedApi =
-            test.generation.ResolvedNames._tester._testPublishedApi(context)
-
-        public val testPublishedApi_1: _testPublishedApi_1 =
-            test.generation.ResolvedNames._tester._testPublishedApi_1(context)
-
-        public val testTopLevelFunction: _testTopLevelFunction =
-            test.generation.ResolvedNames._tester._testTopLevelFunction(context)
-
-        /**
-         * Resolved reference to `tester.TestClass`
-         *
-         */
-        public class _TestClass(
-            context: IrPluginContext
-        ) : ResolvedClass(
-            Names.tester.TestClass.resolveSymbol(context),
-            Names.tester.TestClass.fqName
+        public class second(
+            private val _context: IrPluginContext
         ) {
-            /**
-             * Get the class's type.
-             */
-            public val type: IrSimpleType = owner.typeWith()
+            public fun TestClass(): TestClass = TestClass(_context)
 
-            public val ctor: _ctor = test.generation.ResolvedNames._tester._TestClass._ctor(context)
+            public fun TestTypealias(): TestTypealias = TestTypealias(_context)
 
-            public val fromString: _fromString =
-                test.generation.ResolvedNames._tester._TestClass._fromString(context)
+            public fun TestTypealiasWithArg(): TestTypealiasWithArg = TestTypealiasWithArg(_context)
 
-            public val NestedClass: _NestedClass =
-                test.generation.ResolvedNames._tester._TestClass._NestedClass(context)
+            public fun WithTypeParams(): WithTypeParams = WithTypeParams(_context)
 
-            public val n: _n = test.generation.ResolvedNames._tester._TestClass._n(context)
+            public fun testPropWithTypeVar(): testPropWithTypeVar = testPropWithTypeVar(_context)
 
-            /**
-             * Get the class's type.
-             */
-            public fun type(): IrSimpleType = typeWithArguments(listOf());
+            public fun testPublishedApi(): testPublishedApi = testPublishedApi(_context)
+
+            public fun testPublishedApi_1(): testPublishedApi_1 = testPublishedApi_1(_context)
+
+            public fun testTopLevelFunction(): testTopLevelFunction = testTopLevelFunction(_context)
 
             /**
-             * Resolved reference to `tester.TestClass.<init>`
-             *
-             * Constructs class `tester.TestClass`
-             *
-             * Value parameters:
-             * * `n: kotlin.Int`
+             * Resolved reference to `tester.second.TestClass`
              *
              */
-            public class _ctor(
-                context: IrPluginContext
-            ) : ResolvedConstructor(
-                Names.tester.TestClass.ctor.resolveSymbol(context),
-                Names.tester.TestClass.ctor.fqName
-            ) {
-                /**
-                 * Get the constructed type.
-                 */
-                public val constructedType: IrType = owner.constructedClassType
-
-                /**
-                 * Call the constructor
-                 *
-                 * @param n `kotlin.Int`
-                 * @return `tester.TestClass`
-                 */
-                public fun call(builder: IrBuilderWithScope, n: IrExpression): IrConstructorCall =
-                    builder.irCallConstructor(this, listOf()).apply {
-                        type = owner.returnType
-                        putValueArgument(0, n)
-                    }
-
-            }
-
-            /**
-             * Resolved reference to `tester.TestClass.<init>`
-             *
-             * Constructs class `tester.TestClass`
-             *
-             * Value parameters:
-             * * `s: kotlin.String`
-             *
-             */
-            public class _fromString(
-                context: IrPluginContext
-            ) : ResolvedConstructor(
-                Names.tester.TestClass.fromString.resolveSymbol(context),
-                Names.tester.TestClass.fromString.fqName
-            ) {
-                /**
-                 * Get the constructed type.
-                 */
-                public val constructedType: IrType = owner.constructedClassType
-
-                /**
-                 * Call the constructor
-                 *
-                 * @param s `kotlin.String`
-                 * @return `tester.TestClass`
-                 */
-                public fun call(builder: IrBuilderWithScope, s: IrExpression): IrConstructorCall =
-                    builder.irCallConstructor(this, listOf()).apply {
-                        type = owner.returnType
-                        putValueArgument(0, s)
-                    }
-
-            }
-
-            /**
-             * Resolved reference to `tester.TestClass.NestedClass`
-             *
-             */
-            public class _NestedClass(
-                context: IrPluginContext
-            ) : ResolvedClass(
-                Names.tester.TestClass.NestedClass.resolveSymbol(context),
-                Names.tester.TestClass.NestedClass.fqName
-            ) {
+            public class TestClass private constructor(
+                private val _context: IrPluginContext,
+                symbol: IrClassSymbol
+            ) : ResolvedClass(symbol, fqName) {
                 /**
                  * Get the class's type.
                  */
                 public val type: IrSimpleType = owner.typeWith()
 
+                public constructor(context: IrPluginContext) : this(context, resolveSymbol(context))
+
+                public fun ctor(): ctor = ctor(_context)
+
+                public fun fromString(): fromString = fromString(_context)
+
+                public fun NestedClass(): NestedClass = NestedClass(_context)
+
+                public fun n(): n = n(_context)
+
                 /**
-                 * Get the class's type.
+                 * Resolved reference to `tester.second.TestClass.<init>`
+                 *
+                 * Constructs class `tester.second.TestClass`
+                 *
+                 * Value parameters:
+                 * * `n: kotlin.Int`
+                 *
                  */
-                public fun type(): IrSimpleType = typeWithArguments(listOf());
+                public class ctor private constructor(
+                    private val _context: IrPluginContext,
+                    symbol: IrConstructorSymbol
+                ) : ResolvedConstructor(symbol, fqName) {
+                    /**
+                     * Get the constructed type.
+                     */
+                    public val constructedType: IrType = owner.constructedClassType
+
+                    public constructor(context: IrPluginContext) : this(
+                        context,
+                        resolveSymbol(context)
+                    )
+
+                    /**
+                     * Call the constructor
+                     *
+                     * @param n `kotlin.Int`
+                     * @return `tester.second.TestClass`
+                     */
+                    public fun call(builder: IrBuilderWithScope, n: IrExpression): IrConstructorCall =
+                        builder.irCallConstructor(this, listOf()).apply {
+                            type = owner.returnType
+                            putValueArgument(0, n)
+                        }
+
+
+                    public companion object Reference :
+                        ConstructorReference<ctor>(
+                            FqName("tester.second.TestClass"),
+                            IdSignature.PublicSignature(
+                                "tester.second",
+                                "TestClass.<init>", -5182794243525578284, 0
+                            )
+                        ) {
+                        public override fun getResolvedReference(
+                            context: IrPluginContext,
+                            symbol: IrConstructorSymbol
+                        ): ctor = ctor(context, symbol)
+                    }
+                }
+
+                /**
+                 * Resolved reference to `tester.second.TestClass.<init>`
+                 *
+                 * Constructs class `tester.second.TestClass`
+                 *
+                 * Value parameters:
+                 * * `s: kotlin.String`
+                 *
+                 */
+                public class fromString private constructor(
+                    private val _context: IrPluginContext,
+                    symbol: IrConstructorSymbol
+                ) : ResolvedConstructor(symbol, fqName) {
+                    /**
+                     * Get the constructed type.
+                     */
+                    public val constructedType: IrType = owner.constructedClassType
+
+                    public constructor(context: IrPluginContext) : this(
+                        context,
+                        resolveSymbol(context)
+                    )
+
+                    /**
+                     * Call the constructor
+                     *
+                     * @param s `kotlin.String`
+                     * @return `tester.second.TestClass`
+                     */
+                    public fun call(builder: IrBuilderWithScope, s: IrExpression): IrConstructorCall =
+                        builder.irCallConstructor(this, listOf()).apply {
+                            type = owner.returnType
+                            putValueArgument(0, s)
+                        }
+
+
+                    public companion object Reference :
+                        ConstructorReference<fromString>(
+                            FqName("tester.second.TestClass"),
+                            IdSignature.PublicSignature(
+                                "tester.second", "TestClass.<init>",
+                                1280618353163213788, 0
+                            )
+                        ) {
+                        public override fun getResolvedReference(
+                            context: IrPluginContext,
+                            symbol: IrConstructorSymbol
+                        ): fromString = fromString(
+                            context,
+                            symbol
+                        )
+                    }
+                }
+
+                /**
+                 * Resolved reference to `tester.second.TestClass.NestedClass`
+                 *
+                 */
+                public class NestedClass private constructor(
+                    private val _context: IrPluginContext,
+                    symbol: IrClassSymbol
+                ) : ResolvedClass(symbol, fqName) {
+                    /**
+                     * Get the class's type.
+                     */
+                    public val type: IrSimpleType = owner.typeWith()
+
+                    public constructor(context: IrPluginContext) : this(
+                        context,
+                        resolveSymbol(context)
+                    )
+
+                    public companion object Reference :
+                        ClassReference<NestedClass>(
+                            FqName("tester.second.TestClass.NestedClass"),
+                            IdSignature.PublicSignature(
+                                "tester.second", "TestClass.NestedClass",
+                                null, 0
+                            )
+                        ) {
+                        public override fun getResolvedReference(
+                            context: IrPluginContext,
+                            symbol: IrClassSymbol
+                        ): NestedClass = NestedClass(context, symbol)
+                    }
+                }
+
+                /**
+                 * Resolved reference to `tester.second.TestClass.n`
+                 *
+                 * Dispatch receiver: `tester.second.TestClass`
+                 *
+                 * Type: `kotlin.Int`
+                 */
+                public class n private constructor(
+                    private val _context: IrPluginContext,
+                    symbol: IrPropertySymbol
+                ) : ResolvedProperty(symbol, fqName) {
+                    /**
+                     * Get the property's type.
+                     */
+                    public val type: IrType = (owner.getter?.returnType ?: owner.backingField?.type)!!
+
+                    /**
+                     * The getter
+                     */
+                    public val getter: IrSimpleFunctionSymbol = owner.getter!!.symbol
+
+                    /**
+                     * The setter
+                     */
+                    public val setter: IrSimpleFunctionSymbol = owner.setter!!.symbol
+
+                    /**
+                     * The backing field
+                     */
+                    public val backingField: IrFieldSymbol = owner.backingField!!.symbol
+
+                    public constructor(context: IrPluginContext) : this(
+                        context,
+                        resolveSymbol(context)
+                    )
+
+                    /**
+                     * Call the getter
+                     *
+                     * @param dispatchReceiver `tester.second.TestClass`
+                     * @return `kotlin.Int`
+                     */
+                    public fun `get`(builder: IrBuilderWithScope, dispatchReceiver: IrExpression):
+                            IrCall = builder.irCall(getter).apply {
+                        this.dispatchReceiver = dispatchReceiver
+                        type = getter.owner.returnType
+                    }
+
+
+                    /**
+                     * Call the setter
+                     *
+                     * @param dispatchReceiver `tester.second.TestClass`
+                     * @param value `kotlin.Int`
+                     * @return `kotlin.Unit`
+                     */
+                    public fun `set`(
+                        builder: IrBuilderWithScope,
+                        dispatchReceiver: IrExpression,
+                        `value`: IrExpression
+                    ): IrCall = builder.irCall(setter).apply {
+                        this.dispatchReceiver = dispatchReceiver
+                        type = setter.owner.returnType
+                        putValueArgument(0, value)
+                    }
+
+
+                    public companion object Reference :
+                        PropertyReference<n>(
+                            FqName("tester.second.TestClass.n"),
+                            IdSignature.PublicSignature(
+                                "tester.second",
+                                "TestClass.n", -1061662854873377138, 0
+                            )
+                        ) {
+                        public override fun getResolvedReference(
+                            context: IrPluginContext,
+                            symbol: IrPropertySymbol
+                        ): n = n(context, symbol)
+                    }
+                }
+
+                public companion object Reference :
+                    ClassReference<TestClass>(
+                        FqName("tester.second.TestClass"),
+                        IdSignature.PublicSignature("tester.second", "TestClass", null, 0)
+                    ) {
+                    public val ctor: ctor.Reference = TestClass.ctor.Reference
+
+                    public val fromString: fromString.Reference = TestClass.fromString.Reference
+
+                    public val NestedClass: NestedClass.Reference = TestClass.NestedClass.Reference
+
+                    public val n: n.Reference = TestClass.n.Reference
+
+                    public override fun getResolvedReference(
+                        context: IrPluginContext,
+                        symbol: IrClassSymbol
+                    ): TestClass = TestClass(context, symbol)
+                }
             }
 
             /**
-             * Resolved reference to `tester.TestClass.n`
+             * Resolved reference to `tester.second.TestTypealias`
              *
-             * Dispatch receiver: `tester.TestClass`
+             */
+            public class TestTypealias private constructor(
+                private val _context: IrPluginContext,
+                symbol: IrTypeAliasSymbol
+            ) : ResolvedTypealias(symbol, fqName) {
+                /**
+                 * Get the expanded type.
+                 */
+                public val type: IrType = owner.expandedType
+
+                public constructor(context: IrPluginContext) : this(context, resolveSymbol(context))
+
+                public companion object Reference :
+                    TypealiasReference<TestTypealias>(
+                        FqName("tester.second.TestTypealias"),
+                        IdSignature.PublicSignature("tester.second", "TestTypealias", null, 0)
+                    ) {
+                    public override fun getResolvedReference(
+                        context: IrPluginContext,
+                        symbol: IrTypeAliasSymbol
+                    ): TestTypealias = TestTypealias(
+                        context,
+                        symbol
+                    )
+                }
+            }
+
+            /**
+             * Resolved reference to `tester.second.TestTypealiasWithArg`
+             *
+             * Type parameters:
+             * * `T`
+             *
+             */
+            public class TestTypealiasWithArg private constructor(
+                private val _context: IrPluginContext,
+                symbol: IrTypeAliasSymbol
+            ) : ResolvedTypealias(symbol, fqName) {
+                public constructor(context: IrPluginContext) : this(context, resolveSymbol(context))
+
+                /**
+                 * Get the expanded type.
+                 *
+                 * @param T `?`
+                 */
+                public fun type(T: IrType): IrType =
+                    owner.expandedType.substitute(owner.typeParameters, listOf(T))
+
+                public companion object Reference :
+                    TypealiasReference<TestTypealiasWithArg>(
+                        FqName("tester.second.TestTypealiasWithArg"),
+                        IdSignature.PublicSignature(
+                            "tester.second", "TestTypealiasWithArg", null,
+                            0
+                        )
+                    ) {
+                    public override fun getResolvedReference(
+                        context: IrPluginContext,
+                        symbol: IrTypeAliasSymbol
+                    ): TestTypealiasWithArg =
+                        TestTypealiasWithArg(context, symbol)
+                }
+            }
+
+            /**
+             * Resolved reference to `tester.second.WithTypeParams`
+             *
+             * Type parameters:
+             * * `T : kotlin.Number`
+             *
+             */
+            public class WithTypeParams private constructor(
+                private val _context: IrPluginContext,
+                symbol: IrClassSymbol
+            ) : ResolvedClass(symbol, fqName) {
+                public constructor(context: IrPluginContext) : this(context, resolveSymbol(context))
+
+                /**
+                 * Get the class's type.
+                 *
+                 * @param T `? : kotlin.Number`
+                 */
+                public fun type(T: IrType): IrSimpleType = owner.typeWith(T)
+
+                /**
+                 * Get the class's type.
+                 *
+                 * @param T `? : kotlin.Number`
+                 */
+                public fun type(T: IrTypeArgument = IrStarProjectionImpl): IrSimpleType =
+                    typeWithArguments(listOf(T));
+
+                public fun ctor(): ctor = ctor(_context)
+
+                /**
+                 * Resolved reference to `tester.second.WithTypeParams.<init>`
+                 *
+                 * Constructs class `tester.second.WithTypeParams<T of
+                 * tester.second.WithTypeParams>`
+                 *
+                 * Class type parameters:
+                 * * `T : kotlin.Number`
+                 *
+                 * Value parameters:
+                 * * `n: T of tester.second.WithTypeParams`
+                 *
+                 */
+                public class ctor private constructor(
+                    private val _context: IrPluginContext,
+                    symbol: IrConstructorSymbol
+                ) : ResolvedConstructor(symbol, fqName) {
+                    public constructor(context: IrPluginContext) : this(
+                        context,
+                        resolveSymbol(context)
+                    )
+
+                    /**
+                     * Get the constructed type.
+                     *
+                     * @param T `? : kotlin.Number`
+                     */
+                    public fun constructedType(T: IrType): IrType =
+                        owner.constructedClassType.substitute(
+                            owner.constructedClass.typeParameters,
+                            listOf(T)
+                        )
+
+                    /**
+                     * Call the constructor
+                     *
+                     * @param T `? : kotlin.Number`
+                     * @param n `T of tester.second.WithTypeParams`
+                     * @return `tester.second.WithTypeParams<T of tester.second.WithTypeParams>`
+                     */
+                    public fun call(
+                        builder: IrBuilderWithScope,
+                        T: IrType,
+                        n: IrExpression
+                    ): IrConstructorCall = builder.irCallConstructor(this, listOf(T)).apply {
+                        putTypeArgument(0, T)
+                        type = owner.returnType.substitute(typeSubstitutionMap)
+                        putValueArgument(0, n)
+                    }
+
+
+                    public companion object Reference :
+                        ConstructorReference<ctor>(
+                            FqName("tester.second.WithTypeParams"),
+                            IdSignature.PublicSignature(
+                                "tester.second",
+                                "WithTypeParams.<init>", -8731461708390519279, 0
+                            )
+                        ) {
+                        public override fun getResolvedReference(
+                            context: IrPluginContext,
+                            symbol: IrConstructorSymbol
+                        ): ctor = ctor(context, symbol)
+                    }
+                }
+
+                public companion object Reference :
+                    ClassReference<WithTypeParams>(
+                        FqName("tester.second.WithTypeParams"),
+                        IdSignature.PublicSignature("tester.second", "WithTypeParams", null, 0)
+                    ) {
+                    public val ctor: ctor.Reference = WithTypeParams.ctor.Reference
+
+                    public override fun getResolvedReference(
+                        context: IrPluginContext,
+                        symbol: IrClassSymbol
+                    ): WithTypeParams = WithTypeParams(context, symbol)
+                }
+            }
+
+            /**
+             * Resolved reference to `tester.second.testPropWithTypeVar`
+             *
+             * Type parameters:
+             * * `T : kotlin.Number`
+             *
+             * Extension receiver: `T of tester.second.<get-testPropWithTypeVar>`
              *
              * Type: `kotlin.Int`
              */
-            public class _n(
-                context: IrPluginContext
-            ) : ResolvedProperty(
-                Names.tester.TestClass.n.resolveSymbol(context),
-                Names.tester.TestClass.n.fqName
-            ) {
-                /**
-                 * Get the property's type.
-                 */
-                public val type: IrType = (owner.getter?.returnType ?: owner.backingField?.type)!!
-
+            public class testPropWithTypeVar private constructor(
+                private val _context: IrPluginContext,
+                symbol: IrPropertySymbol
+            ) : ResolvedProperty(symbol, fqName) {
                 /**
                  * The getter
                  */
                 public val getter: IrSimpleFunctionSymbol = owner.getter!!.symbol
 
-                /**
-                 * The setter
-                 */
-                public val setter: IrSimpleFunctionSymbol = owner.setter!!.symbol
+                public constructor(context: IrPluginContext) : this(context, resolveSymbol(context))
 
                 /**
-                 * The backing field
+                 * Get the property's type.
+                 *
+                 * @param T `? : kotlin.Number`
                  */
-                public val backingField: IrFieldSymbol = owner.backingField!!.symbol
+                public fun type(T: IrType): IrType = (owner.getter?.returnType ?: owner.backingField?.type)!!.substitute(
+                    owner.getter!!.typeParameters,
+                    listOf(T)
+                )
 
                 /**
                  * Call the getter
                  *
-                 * @param dispatchReceiver `tester.TestClass`
+                 * @param T `? : kotlin.Number`
+                 * @param extensionReceiver `T of tester.second.<get-testPropWithTypeVar>`
                  * @return `kotlin.Int`
                  */
-                public fun `get`(builder: IrBuilderWithScope, dispatchReceiver: IrExpression):
-                        IrCall = builder.irCall(owner.getter!!.symbol).apply {
-                    this.dispatchReceiver = dispatchReceiver
-                    type = owner.getter!!.returnType
+                public fun `get`(
+                    builder: IrBuilderWithScope,
+                    T: IrType,
+                    extensionReceiver: IrExpression
+                ): IrCall = builder.irCall(getter).apply {
+                    putTypeArgument(0, T)
+                    this.extensionReceiver = extensionReceiver
+                    type = getter.owner.returnType.substitute(typeSubstitutionMap)
                 }
 
 
+                public companion object Reference :
+                    PropertyReference<testPropWithTypeVar>(
+                        FqName("tester.second.testPropWithTypeVar"),
+                        IdSignature.PublicSignature(
+                            "tester.second",
+                            "testPropWithTypeVar", -2301283503845253114, 0
+                        )
+                    ) {
+                    public override fun getResolvedReference(
+                        context: IrPluginContext,
+                        symbol: IrPropertySymbol
+                    ): testPropWithTypeVar =
+                        testPropWithTypeVar(context, symbol)
+                }
+            }
+
+            /**
+             * Resolved reference to `tester.second.testPublishedApi`
+             *
+             * Return type: `kotlin.Unit`
+             */
+            public class testPublishedApi private constructor(
+                private val _context: IrPluginContext,
+                symbol: IrSimpleFunctionSymbol
+            ) : ResolvedFunction(symbol, fqName) {
                 /**
-                 * Call the setter
+                 * Get the return type.
+                 */
+                public val returnType: IrType = owner.returnType
+
+                public constructor(context: IrPluginContext) : this(context, resolveSymbol(context))
+
+                /**
+                 * Call the function
                  *
-                 * @param dispatchReceiver `tester.TestClass`
-                 * @param value `kotlin.Int`
                  * @return `kotlin.Unit`
                  */
-                public fun `set`(
-                    builder: IrBuilderWithScope,
-                    dispatchReceiver: IrExpression,
-                    `value`: IrExpression
-                ): IrCall = builder.irCall(owner.setter!!.symbol).apply {
-                    this.dispatchReceiver = dispatchReceiver
-                    type = owner.setter!!.returnType
-                    putValueArgument(0, value)
+                public fun call(builder: IrBuilderWithScope): IrCall = builder.irCall(this).apply {
+                    type = owner.returnType
                 }
 
+
+                public companion object Reference :
+                    FunctionReference<testPublishedApi>(
+                        FqName("tester.second.testPublishedApi"),
+                        IdSignature.PublicSignature(
+                            "tester.second", "testPublishedApi",
+                            5159344213406223961, 0
+                        )
+                    ) {
+                    public override fun getResolvedReference(
+                        context: IrPluginContext,
+                        symbol: IrSimpleFunctionSymbol
+                    ): testPublishedApi =
+                        testPublishedApi(context, symbol)
+                }
             }
-        }
-
-        /**
-         * Resolved reference to `tester.TestTypealias`
-         *
-         */
-        public class _TestTypealias(
-            context: IrPluginContext
-        ) : ResolvedTypealias(
-            Names.tester.TestTypealias.resolveSymbol(context),
-            Names.tester.TestTypealias.fqName
-        ) {
-            /**
-             * Get the expanded type.
-             */
-            public val type: IrType = owner.expandedType
-        }
-
-        /**
-         * Resolved reference to `tester.TestTypealiasWithArg`
-         *
-         * Type parameters:
-         * * `T`
-         *
-         */
-        public class _TestTypealiasWithArg(
-            context: IrPluginContext
-        ) : ResolvedTypealias(
-            Names.tester.TestTypealiasWithArg.resolveSymbol(context),
-            Names.tester.TestTypealiasWithArg.fqName
-        ) {
-            /**
-             * Get the expanded type.
-             *
-             * @param T `?`
-             */
-            public fun type(T: IrType): IrType = owner.expandedType.substitute(
-                owner.typeParameters,
-                listOf(T)
-            )
-        }
-
-        /**
-         * Resolved reference to `tester.WithTypeParams`
-         *
-         * Type parameters:
-         * * `T : kotlin.Number`
-         *
-         */
-        public class _WithTypeParams(
-            context: IrPluginContext
-        ) : ResolvedClass(
-            Names.tester.WithTypeParams.resolveSymbol(context),
-            Names.tester.WithTypeParams.fqName
-        ) {
-            public val ctor: _ctor =
-                test.generation.ResolvedNames._tester._WithTypeParams._ctor(context)
 
             /**
-             * Get the class's type.
-             *
-             * @param T `? : kotlin.Number`
-             */
-            public fun type(T: IrType): IrSimpleType = owner.typeWith(T)
-
-            /**
-             * Get the class's type.
-             *
-             * @param T `? : kotlin.Number`
-             */
-            public fun type(T: IrTypeArgument = IrStarProjectionImpl): IrSimpleType =
-                typeWithArguments(listOf(T));
-
-            /**
-             * Resolved reference to `tester.WithTypeParams.<init>`
-             *
-             * Constructs class `tester.WithTypeParams<T of tester.WithTypeParams>`
-             *
-             * Class type parameters:
-             * * `T : kotlin.Number`
+             * Resolved reference to `tester.second.testPublishedApi`
              *
              * Value parameters:
-             * * `n: T of tester.WithTypeParams`
+             * * `t: kotlin.Int`
              *
+             * Return type: `kotlin.Unit`
              */
-            public class _ctor(
-                context: IrPluginContext
-            ) : ResolvedConstructor(
-                Names.tester.WithTypeParams.ctor.resolveSymbol(context),
-                Names.tester.WithTypeParams.ctor.fqName
-            ) {
+            public class testPublishedApi_1 private constructor(
+                private val _context: IrPluginContext,
+                symbol: IrSimpleFunctionSymbol
+            ) : ResolvedFunction(symbol, fqName) {
                 /**
-                 * Get the constructed type.
-                 *
-                 * @param T `? : kotlin.Number`
+                 * Get the return type.
                  */
-                public fun constructedType(T: IrType): IrType =
-                    owner.constructedClassType.substitute(
-                        owner.constructedClass.typeParameters,
-                        listOf(T)
-                    )
+                public val returnType: IrType = owner.returnType
+
+                public constructor(context: IrPluginContext) : this(context, resolveSymbol(context))
 
                 /**
-                 * Call the constructor
+                 * Call the function
                  *
-                 * @param T `? : kotlin.Number`
-                 * @param n `T of tester.WithTypeParams`
-                 * @return `tester.WithTypeParams<T of tester.WithTypeParams>`
+                 * @param t `kotlin.Int`
+                 * @return `kotlin.Unit`
+                 */
+                public fun call(builder: IrBuilderWithScope, t: IrExpression): IrCall =
+                    builder.irCall(this).apply {
+                        type = owner.returnType
+                        putValueArgument(0, t)
+                    }
+
+
+                public companion object Reference :
+                    FunctionReference<testPublishedApi_1>(
+                        FqName("tester.second.testPublishedApi"),
+                        IdSignature.PublicSignature(
+                            "tester.second", "testPublishedApi",
+                            1731966692884449248, 0
+                        )
+                    ) {
+                    public override fun getResolvedReference(
+                        context: IrPluginContext,
+                        symbol: IrSimpleFunctionSymbol
+                    ): testPublishedApi_1 =
+                        testPublishedApi_1(context, symbol)
+                }
+            }
+
+            /**
+             * Resolved reference to `tester.second.testTopLevelFunction`
+             *
+             * Type parameters:
+             * * `T`
+             *
+             * Extension receiver: `kotlin.Int`
+             *
+             * Value parameters:
+             * * `req: T of tester.second.testTopLevelFunction`
+             * * `opt: kotlin.Double? = ...`
+             * * `vararg t: kotlin.Array<out kotlin.String>`
+             *
+             * Return type: `kotlin.Int`
+             */
+            public class testTopLevelFunction private constructor(
+                private val _context: IrPluginContext,
+                symbol: IrSimpleFunctionSymbol
+            ) : ResolvedFunction(symbol, fqName) {
+                public constructor(context: IrPluginContext) : this(context, resolveSymbol(context))
+
+                /**
+                 * Get the return type.
+                 *
+                 * @param T `?`
+                 */
+                public fun returnType(T: IrType): IrType =
+                    owner.returnType.substitute(owner.typeParameters, listOf(T))
+
+                /**
+                 * Call the function
+                 *
+                 * @param T `?`
+                 * @param extensionReceiver `kotlin.Int`
+                 * @param req `T of tester.second.testTopLevelFunction`
+                 * @param opt `kotlin.Double? = ...`
+                 * @param t `vararg kotlin.Array<out kotlin.String>`
+                 * @return `kotlin.Int`
                  */
                 public fun call(
                     builder: IrBuilderWithScope,
                     T: IrType,
-                    n: IrExpression
-                ): IrConstructorCall = builder.irCallConstructor(this, listOf(T)).apply {
+                    extensionReceiver: IrExpression,
+                    req: IrExpression,
+                    opt: IrExpression? = null,
+                    t: IrExpression
+                ): IrCall = builder.irCall(this).apply {
                     putTypeArgument(0, T)
+                    this.extensionReceiver = extensionReceiver
                     type = owner.returnType.substitute(typeSubstitutionMap)
-                    putValueArgument(0, n)
+                    putValueArgument(0, req)
+                    if (opt != null) {
+                        putValueArgument(1, opt)
+                    }
+                    putValueArgument(2, t)
                 }
 
-            }
-        }
 
-        /**
-         * Resolved reference to `tester.testPropWithTypeVar`
-         *
-         * Type parameters:
-         * * `T : kotlin.Number`
-         *
-         * Extension receiver: `T of tester.<get-testPropWithTypeVar>`
-         *
-         * Type: `kotlin.Int`
-         */
-        public class _testPropWithTypeVar(
-            context: IrPluginContext
-        ) : ResolvedProperty(
-            Names.tester.testPropWithTypeVar.resolveSymbol(context),
-            Names.tester.testPropWithTypeVar.fqName
-        ) {
-            /**
-             * The getter
-             */
-            public val getter: IrSimpleFunctionSymbol = owner.getter!!.symbol
-
-            /**
-             * Get the property's type.
-             *
-             * @param T `? : kotlin.Number`
-             */
-            public fun type(T: IrType): IrType =
-                (owner.getter?.returnType ?: owner.backingField?.type)!!.substitute(owner.getter!!.typeParameters, listOf(T))
-
-            /**
-             * Call the getter
-             *
-             * @param T `? : kotlin.Number`
-             * @param extensionReceiver `T of tester.<get-testPropWithTypeVar>`
-             * @return `kotlin.Int`
-             */
-            public fun `get`(
-                builder: IrBuilderWithScope,
-                T: IrType,
-                extensionReceiver: IrExpression
-            ): IrCall = builder.irCall(owner.getter!!.symbol).apply {
-                putTypeArgument(0, T)
-                this.extensionReceiver = extensionReceiver
-                type = owner.getter!!.returnType.substitute(typeSubstitutionMap)
-            }
-
-        }
-
-        /**
-         * Resolved reference to `tester.testPublishedApi`
-         *
-         * Return type: `kotlin.Unit`
-         */
-        public class _testPublishedApi(
-            context: IrPluginContext
-        ) : ResolvedFunction(
-            Names.tester.testPublishedApi.resolveSymbol(context),
-            Names.tester.testPublishedApi.fqName
-        ) {
-            /**
-             * Get the return type.
-             */
-            public val returnType: IrType = owner.returnType
-
-            /**
-             * Call the function
-             *
-             * @return `kotlin.Unit`
-             */
-            public fun call(builder: IrBuilderWithScope): IrCall = builder.irCall(this).apply {
-                type = owner.returnType
-            }
-
-        }
-
-        /**
-         * Resolved reference to `tester.testPublishedApi`
-         *
-         * Value parameters:
-         * * `t: kotlin.Int`
-         *
-         * Return type: `kotlin.Unit`
-         */
-        public class _testPublishedApi_1(
-            context: IrPluginContext
-        ) : ResolvedFunction(
-            Names.tester.testPublishedApi_1.resolveSymbol(context),
-            Names.tester.testPublishedApi_1.fqName
-        ) {
-            /**
-             * Get the return type.
-             */
-            public val returnType: IrType = owner.returnType
-
-            /**
-             * Call the function
-             *
-             * @param t `kotlin.Int`
-             * @return `kotlin.Unit`
-             */
-            public fun call(builder: IrBuilderWithScope, t: IrExpression): IrCall =
-                builder.irCall(this).apply {
-                    type = owner.returnType
-                    putValueArgument(0, t)
-                }
-
-        }
-
-        /**
-         * Resolved reference to `tester.testTopLevelFunction`
-         *
-         * Type parameters:
-         * * `T`
-         *
-         * Extension receiver: `kotlin.Int`
-         *
-         * Value parameters:
-         * * `req: T of tester.testTopLevelFunction`
-         * * `opt: kotlin.Double? = ...`
-         * * `vararg t: kotlin.Array<out kotlin.String>`
-         *
-         * Return type: `kotlin.Int`
-         */
-        public class _testTopLevelFunction(
-            context: IrPluginContext
-        ) : ResolvedFunction(
-            Names.tester.testTopLevelFunction.resolveSymbol(context),
-            Names.tester.testTopLevelFunction.fqName
-        ) {
-            /**
-             * Get the return type.
-             *
-             * @param T `?`
-             */
-            public fun returnType(T: IrType): IrType =
-                owner.returnType.substitute(owner.typeParameters, listOf(T))
-
-            /**
-             * Call the function
-             *
-             * @param T `?`
-             * @param extensionReceiver `kotlin.Int`
-             * @param req `T of tester.testTopLevelFunction`
-             * @param opt `kotlin.Double? = ...`
-             * @param t `vararg kotlin.Array<out kotlin.String>`
-             * @return `kotlin.Int`
-             */
-            public fun call(
-                builder: IrBuilderWithScope,
-                T: IrType,
-                extensionReceiver: IrExpression,
-                req: IrExpression,
-                opt: IrExpression? = null,
-                t: IrExpression
-            ): IrCall = builder.irCall(this).apply {
-                putTypeArgument(0, T)
-                this.extensionReceiver = extensionReceiver
-                type = owner.returnType.substitute(typeSubstitutionMap)
-                putValueArgument(0, req)
-                if (opt != null) {
-                    putValueArgument(1, opt)
-                }
-                putValueArgument(2, t)
-            }
-
-
-            /**
-             * Call the function
-             *
-             * @param T `?`
-             * @param extensionReceiver `kotlin.Int`
-             * @param req `T of tester.testTopLevelFunction`
-             * @param opt `kotlin.Double? = ...`
-             * @param t `vararg kotlin.Array<out kotlin.String>`
-             * @return `kotlin.Int`
-             */
-            public fun callVararg(
-                builder: IrBuilderWithScope,
-                T: IrType,
-                extensionReceiver: IrExpression,
-                req: IrExpression,
-                opt: IrExpression? = null,
-                t: Iterable<IrExpression>
-            ): IrCall = builder.irCall(this).apply {
-                putTypeArgument(0, T)
-                this.extensionReceiver = extensionReceiver
-                type = owner.returnType.substitute(typeSubstitutionMap)
-                putValueArgument(0, req)
-                if (opt != null) {
-                    putValueArgument(1, opt)
-                }
-                putValueArgument(
-                    2,
-                    builder.irVararg(
-                        owner.valueParameters[2].varargElementType!!.substitute(typeSubstitutionMap),
-                        t.toList()
+                /**
+                 * Call the function
+                 *
+                 * @param T `?`
+                 * @param extensionReceiver `kotlin.Int`
+                 * @param req `T of tester.second.testTopLevelFunction`
+                 * @param opt `kotlin.Double? = ...`
+                 * @param t `vararg kotlin.Array<out kotlin.String>`
+                 * @return `kotlin.Int`
+                 */
+                public fun callVararg(
+                    builder: IrBuilderWithScope,
+                    T: IrType,
+                    extensionReceiver: IrExpression,
+                    req: IrExpression,
+                    opt: IrExpression? = null,
+                    t: Iterable<IrExpression>
+                ): IrCall = builder.irCall(this).apply {
+                    putTypeArgument(0, T)
+                    this.extensionReceiver = extensionReceiver
+                    type = owner.returnType.substitute(typeSubstitutionMap)
+                    putValueArgument(0, req)
+                    if (opt != null) {
+                        putValueArgument(1, opt)
+                    }
+                    putValueArgument(
+                        2,
+                        builder.irVararg(
+                            owner.valueParameters[2].varargElementType!!.substitute(typeSubstitutionMap),
+                            t.toList()
+                        )
                     )
-                )
+                }
+
+
+                public companion object Reference :
+                    FunctionReference<testTopLevelFunction>(
+                        FqName("tester.second.testTopLevelFunction"),
+                        IdSignature.PublicSignature(
+                            "tester.second",
+                            "testTopLevelFunction", -3918369520275516103, 0
+                        )
+                    ) {
+                    public override fun getResolvedReference(
+                        context: IrPluginContext,
+                        symbol: IrSimpleFunctionSymbol
+                    ): testTopLevelFunction =
+                        testTopLevelFunction(context, symbol)
+                }
             }
 
+            public companion object Reference {
+                public val TestClass: TestClass.Reference = second.TestClass.Reference
+
+                public val TestTypealias: TestTypealias.Reference = second.TestTypealias.Reference
+
+                public val TestTypealiasWithArg: TestTypealiasWithArg.Reference =
+                    second.TestTypealiasWithArg.Reference
+
+                public val WithTypeParams: WithTypeParams.Reference =
+                    second.WithTypeParams.Reference
+
+                public val testPropWithTypeVar: testPropWithTypeVar.Reference =
+                    second.testPropWithTypeVar.Reference
+
+                public val testPublishedApi: testPublishedApi.Reference =
+                    second.testPublishedApi.Reference
+
+                public val testPublishedApi_1: testPublishedApi_1.Reference =
+                    second.testPublishedApi_1.Reference
+
+                public val testTopLevelFunction: testTopLevelFunction.Reference =
+                    second.testTopLevelFunction.Reference
+
+                public operator fun invoke(context: IrPluginContext) = second(context)
+            }
         }
+
+        public companion object Reference {
+            public val second: second.Reference = tester.second.Reference
+
+            public operator fun invoke(context: IrPluginContext) = tester(context)
+        }
+    }
+
+    public companion object Reference {
+        public val tester: tester.Reference = Names.tester.Reference
+
+        public operator fun invoke(context: IrPluginContext) = Names(context)
     }
 }

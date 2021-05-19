@@ -1,4 +1,4 @@
-package tester
+package tester.second
 
 import com.rnett.plugin.export.annotations.PluginExport
 

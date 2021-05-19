@@ -30,6 +30,7 @@ sealed class ExportDeclaration {
     }
 
     abstract val fqName: ResolvedName
+    open val referenceFqName: ResolvedName get() = fqName
     abstract val signature: Signature
     abstract val customName: String?
     open val defaultName: String get() = fqName.name
@@ -106,6 +107,7 @@ sealed class ExportDeclaration {
         override val customName: String? = null
     ) : ExportDeclaration() {
         val classFqName: ResolvedName = fqName.parent!!
+        override val referenceFqName: ResolvedName = classFqName
         override val defaultName: String
             get() = "ctor"
     }

@@ -1,68 +1,61 @@
 package com.rnett.plugin.generator
 
 import com.rnett.plugin.ExportDeclaration
+import com.squareup.kotlinpoet.ClassName
+import com.squareup.kotlinpoet.FunSpec
+import com.squareup.kotlinpoet.KModifier
+import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import com.squareup.kotlinpoet.PropertySpec
 import com.squareup.kotlinpoet.TypeSpec
 
 internal object ReferenceBuilder {
-    internal fun buildNames(references: TypeSpec.Builder, declarations: DeclarationTree) {
-        addDeclarationTree(references, declarations)
-    }
 
-    private fun addDeclarationTree(references: TypeSpec.Builder, declarationTree: DeclarationTree) {
-        when (declarationTree) {
-            is DeclarationTree.Package -> {
-                if (declarationTree.isRoot) {
-                    declarationTree.children.forEach { addDeclarationTree(references, it) }
-                } else {
-                    val newReferences = TypeSpec.objectBuilder(declarationTree.displayName)
+    private const val objectName = "Reference"
 
-                    declarationTree.children.forEach { addDeclarationTree(newReferences, it) }
+    fun referenceObject(declarationTree: DeclarationTree, fqName: ClassName): TypeSpec {
+        val builder = TypeSpec.companionObjectBuilder(objectName)
 
-                    references.addType(newReferences.build())
-                }
-            }
-            is DeclarationTree.Class -> {
-                if (declarationTree.children.isEmpty()) {
-                    references.addProperty(addNameDeclaration(declarationTree.displayName, declarationTree.declaration))
-                } else {
-                    val newReferences = TypeSpec.objectBuilder(declarationTree.displayName)
-                    val newResolved = TypeSpec.objectBuilder(declarationTree.displayName)
+        declarationTree.declaration?.let { builder.setupDeclaration(it, fqName) }
 
-                    newReferences.superclass(References.ClassReference)
-                        .addSuperclassConstructorParameter(declarationTree.declaration.fqName.toFqName())
-                        .addSuperclassConstructorParameter(declarationTree.declaration.signature.toIdSignature())
+        if (declarationTree is DeclarationTree.Package)
+            builder.setupPackage(fqName)
 
-                    declarationTree.children.forEach { addDeclarationTree(newReferences, it) }
-
-                    references.addType(newReferences.build())
-                }
-            }
-            is DeclarationTree.Leaf -> {
-                references.addProperty(addNameDeclaration(declarationTree.displayName, declarationTree.declaration))
-            }
+        declarationTree.children.forEach {
+            val nameClass = fqName.nestedClass(it.displayName).nestedClass(objectName)
+            builder.addProperty(
+                PropertySpec.builder(it.displayName, nameClass)
+                    .initializer("%L.%L.%L", fqName.simpleNames.last(), it.displayName, objectName)
+                    .build()
+            )
         }
+
+        return builder.build()
     }
 
-    private fun addNameDeclaration(name: String, declaration: ExportDeclaration): PropertySpec = when (declaration) {
-        is ExportDeclaration.Class -> PropertySpec.builder(name, References.ClassReference)
-            .initializer("%T(%L, %L)", References.ClassReference, declaration.fqName.toFqName(), declaration.signature.toIdSignature())
-            .build()
+    private fun TypeSpec.Builder.setupPackage(resolvedType: ClassName): TypeSpec.Builder = apply {
+        addFunction(
+            FunSpec.builder("invoke")
+                .addParameter("context", References.IrPluginContext)
+                .addStatement("return %T(context)", resolvedType)
+                .addModifiers(KModifier.OPERATOR)
+                .build()
+        )
+    }
 
-        is ExportDeclaration.Constructor -> PropertySpec.builder(name, References.ConstructorReference)
-            .initializer("%T(%L, %L)", References.ConstructorReference, declaration.classFqName.toFqName(), declaration.signature.toIdSignature())
-            .build()
+    private fun TypeSpec.Builder.setupDeclaration(declaration: ExportDeclaration, resolvedType: ClassName): TypeSpec.Builder = apply {
+        superclass(References.referenceType(declaration).parameterizedBy(resolvedType))
 
-        is ExportDeclaration.Function -> PropertySpec.builder(name, References.FunctionReference)
-            .initializer("%T(%L, %L)", References.FunctionReference, declaration.fqName.toFqName(), declaration.signature.toIdSignature())
-            .build()
+        addSuperclassConstructorParameter(declaration.referenceFqName.toFqName())
+        addSuperclassConstructorParameter(declaration.signature.toIdSignature())
 
-        is ExportDeclaration.Property -> PropertySpec.builder(name, References.PropertyReference)
-            .initializer("%T(%L, %L)", References.PropertyReference, declaration.fqName.toFqName(), declaration.signature.toIdSignature())
-            .build()
-
-        is ExportDeclaration.Typealias -> PropertySpec.builder(name, References.TypealiasReference)
-            .initializer("%T(%L, %L)", References.TypealiasReference, declaration.fqName.toFqName(), declaration.signature.toIdSignature())
-            .build()
+        addFunction(
+            FunSpec.builder("getResolvedReference")
+                .returns(resolvedType)
+                .addModifiers(KModifier.OVERRIDE)
+                .addParameter("context", References.IrPluginContext)
+                .addParameter("symbol", References.symbolType(declaration))
+                .addStatement("return %T(context, symbol)", resolvedType)
+                .build()
+        )
     }
 }
