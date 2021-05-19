@@ -3,7 +3,7 @@ package tester
 import com.rnett.plugin.export.annotations.PluginExport
 
 @PluginExport
-class TestClass @PluginExport constructor(@PluginExport val n: Int) {
+class TestClass @PluginExport constructor(@PluginExport var n: Int) {
     @PluginExport("fromString")
     constructor(s: String) : this(s.toInt())
 

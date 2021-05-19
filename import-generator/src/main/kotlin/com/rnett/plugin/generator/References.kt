@@ -26,6 +26,8 @@ object References {
 
     val IrType = ClassName.bestGuess("org.jetbrains.kotlin.ir.types.IrType")
     val IrSimpleType = ClassName.bestGuess("org.jetbrains.kotlin.ir.types.IrSimpleType")
+    val IrSimpleFunctionSymbol = ClassName.bestGuess("org.jetbrains.kotlin.ir.symbols.IrSimpleFunctionSymbol")
+    val IrFieldSymbol = ClassName.bestGuess("org.jetbrains.kotlin.ir.symbols.IrFieldSymbol")
     val IrTypeArgument = ClassName.bestGuess("org.jetbrains.kotlin.ir.types.IrTypeArgument")
     val IrExpression = ClassName.bestGuess("org.jetbrains.kotlin.ir.expressions.IrExpression")
     val IrCall = ClassName.bestGuess("org.jetbrains.kotlin.ir.expressions.IrCall")

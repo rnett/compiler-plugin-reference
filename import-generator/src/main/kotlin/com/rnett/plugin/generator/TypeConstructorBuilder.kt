@@ -17,7 +17,8 @@ fun ExportDeclaration.buildTypeConstructor(builder: TypeSpec.Builder, kdoc: Code
         is ExportDeclaration.Class -> {
             kdoc.addTypeParamKdoc(typeParameters)
             TypeConstructorBuilder.ClassTypeWith.build(builder, this, typeParameters)
-            builder.addFunction(TypeConstructorBuilder.ClassTypeArgument.buildFunction(typeParameters))
+            if (typeParameters.isNotEmpty())
+                builder.addFunction(TypeConstructorBuilder.ClassTypeArgument.buildFunction(typeParameters))
         }
         is ExportDeclaration.Constructor -> {
             kdoc.addListBlock("Class type parameters:", classTypeParams) { it.classKdoc() }

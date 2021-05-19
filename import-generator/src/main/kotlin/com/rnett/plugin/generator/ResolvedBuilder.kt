@@ -2,13 +2,14 @@ package com.rnett.plugin.generator
 
 import com.rnett.plugin.ExportDeclaration
 import com.rnett.plugin.ResolvedName
+import com.rnett.plugin.TypeString
 import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.CodeBlock
-import com.squareup.kotlinpoet.CodeBlock.Builder
 import com.squareup.kotlinpoet.FunSpec
 import com.squareup.kotlinpoet.ParameterSpec
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import com.squareup.kotlinpoet.PropertySpec
+import com.squareup.kotlinpoet.TypeName
 import com.squareup.kotlinpoet.TypeSpec
 import com.squareup.kotlinpoet.asTypeName
 
@@ -22,8 +23,6 @@ internal object ResolvedBuilder {
     ) {
         builder.addProperty(PropertySpec.builder("context", References.IrPluginContext).initializer("context").build())
         builder.primaryConstructor(FunSpec.constructorBuilder().addParameter("context", References.IrPluginContext).build())
-
-
 
         addResolvedTree(builder, ResolvedName(referenceClassName), ClassName(packageName, className), declarations)
     }
@@ -111,10 +110,7 @@ internal object ResolvedBuilder {
     }
 
     //TODO call wrappers, i.e. to extract parameters.  Especially for annotations
-
-    //TODO finish
-    //TODO return type builders for this, function, constructors
-    private fun ExportDeclaration.Property.buildProperty(builder: TypeSpec.Builder, kdoc: Builder) {
+    private fun ExportDeclaration.Property.buildProperty(builder: TypeSpec.Builder, kdoc: CodeBlock.Builder) {
         dispatchReceiver?.let {
             kdoc.addStatement("Dispatch receiver: %L", it.type.kdoc)
             kdoc.add("\n")
@@ -129,39 +125,158 @@ internal object ResolvedBuilder {
             kdoc.add("\n")
         }
 
-        kdoc.addStatement("Type: %L", returnType.kdoc)
+        kdoc.addStatement("Type: %L", valueType.kdoc)
 
+        if (hasGetter) {
+            builder.addProperty(
+                PropertySpec.builder("getter", References.IrSimpleFunctionSymbol)
+                    .initializer("owner.getter!!.symbol")
+                    .addKdoc("The getter")
+                    .build()
+            )
+            builder.addFunction(buildGetter())
+        }
+
+        if (hasSetter) {
+            builder.addProperty(
+                PropertySpec.builder("setter", References.IrSimpleFunctionSymbol)
+                    .initializer("owner.setter!!.symbol")
+                    .addKdoc("The setter")
+                    .build()
+            )
+            builder.addFunction(buildSetter())
+        }
+
+        if (hasField) {
+            builder.addProperty(
+                PropertySpec.builder("backingField", References.IrFieldSymbol)
+                    .initializer("owner.backingField!!.symbol")
+                    .addKdoc("The backing field")
+                    .build()
+            )
+        }
 
     }
 
-    private fun ExportDeclaration.Typealias.buildTypealias(builder: TypeSpec.Builder, kdoc: Builder) {
+    private fun ExportDeclaration.Property.buildGetter(): FunSpec {
+        return buildFunctionCall(
+            "get",
+            "Call the getter",
+            References.IrCall,
+            CodeBlock.of("%M(getter)", References.irCall),
+            typeParameters,
+            dispatchReceiver,
+            extensionReceivers,
+            listOf(),
+            valueType,
+            CodeBlock.of("getter.owner.returnType"),
+            false
+        )
     }
 
-    private fun ExportDeclaration.Class.buildClass(builder: TypeSpec.Builder, kdoc: Builder) {
+    private fun ExportDeclaration.Property.buildSetter(): FunSpec {
+        return buildFunctionCall(
+            "set",
+            "Call the setter",
+            References.IrCall,
+            CodeBlock.of("%M(setter)", References.irCall),
+            typeParameters,
+            dispatchReceiver,
+            extensionReceivers,
+            listOf(ExportDeclaration.Param("value", 0, false, false, valueType)),
+            TypeString("kotlin.Unit"),
+            CodeBlock.of("setter.owner.returnType"),
+            false
+        )
+    }
+
+    private fun ExportDeclaration.Typealias.buildTypealias(builder: TypeSpec.Builder, kdoc: CodeBlock.Builder) {
+    }
+
+    private fun ExportDeclaration.Class.buildClass(builder: TypeSpec.Builder, kdoc: CodeBlock.Builder) {
 
     }
 
-    private fun ExportDeclaration.Constructor.buildConstructor(builder: TypeSpec.Builder, kdoc: Builder) {
+    private fun ExportDeclaration.Constructor.buildConstructor(builder: TypeSpec.Builder, kdoc: CodeBlock.Builder) {
 
         kdoc.addListBlock("Value parameters:", valueParameters) { it.classKdoc() }
 
-        val call = FunSpec.builder("call")
-        this.buildConstructorCall(call, false)
-        builder.addFunction(call.build())
+        builder.addFunction(buildConstructorCall(false))
 
         if (valueParameters.any { it.varargs }) {
-            val callVararg = FunSpec.builder("callVararg")
-            this.buildConstructorCall(callVararg, true)
-            builder.addFunction(callVararg.build())
+            builder.addFunction(buildConstructorCall(true))
         }
+    }
+
+    private fun ExportDeclaration.Constructor.buildConstructorCall(useVararg: Boolean): FunSpec {
+        return buildFunctionCall(
+            if (useVararg) "callVararg" else "call",
+            "Call the constructor",
+            References.IrConstructorCall,
+            CodeBlock.of("%M(this, listOf(%L))", References.irCallConstructor, classTypeParams.joinToString(", ") { it.name }),
+            classTypeParams,
+            null,
+            emptyList(),
+            valueParameters,
+            constructedClass,
+            CodeBlock.of("owner.returnType"),
+            useVararg
+        )
+
+    }
+
+    private fun ExportDeclaration.Function.buildFunction(
+        builder: TypeSpec.Builder,
+        kdoc: CodeBlock.Builder
+    ) {
+        dispatchReceiver?.let {
+            kdoc.addStatement("Dispatch receiver: %L", it.type.kdoc)
+            kdoc.add("\n")
+        }
+
+        if (extensionReceivers.isNotEmpty()) {
+            if (extensionReceivers.size > 1) {
+                error("Multiple receivers not yet supported")
+            }
+            val extensionReceiver = extensionReceivers.single()
+            kdoc.addStatement("Extension receiver: %L", extensionReceiver.type.kdoc)
+            kdoc.add("\n")
+        }
+
+        kdoc.addListBlock("Value parameters:", valueParameters) { it.classKdoc() }
+
+        kdoc.addStatement("Return type: %L", returnType.kdoc)
+
+        builder.addFunction(buildFunctionCall(false))
+
+        if (valueParameters.any { it.varargs }) {
+            builder.addFunction(buildFunctionCall(true))
+        }
+    }
+
+    //TODO builder/lambda for lambda arguments
+    private fun ExportDeclaration.Function.buildFunctionCall(useVararg: Boolean): FunSpec {
+        return buildFunctionCall(
+            if (useVararg) "callVararg" else "call",
+            "Call the function",
+            References.IrCall,
+            CodeBlock.of("%M(this)", References.irCall),
+            typeParameters,
+            dispatchReceiver,
+            extensionReceivers,
+            valueParameters,
+            returnType,
+            CodeBlock.of("owner.returnType"),
+            useVararg
+        )
     }
 
     private fun addValueParameters(
         valueParameters: List<ExportDeclaration.Param>,
         useVararg: Boolean,
         call: FunSpec.Builder,
-        body: Builder,
-        kdoc: Builder
+        body: CodeBlock.Builder,
+        kdoc: CodeBlock.Builder
     ) {
         valueParameters.forEach {
             val (value, baseType) = if (it.varargs && useVararg) {
@@ -189,76 +304,35 @@ internal object ResolvedBuilder {
         }
     }
 
-    private fun ExportDeclaration.Constructor.buildConstructorCall(call: FunSpec.Builder, useVararg: Boolean) {
-        call.returns(References.IrConstructorCall)
-        call.addParameter("builder", References.IrBuilderWithScope)
-
-        val body = CodeBlock.builder()
-            .beginControlFlow("builder.%M(this, listOf(%L)).apply{", References.irCallConstructor, classTypeParams.joinToString(", ") { it.name })
-        val kdoc = CodeBlock.builder().addStatement("Call the constructor").add("\n")
-
-        classTypeParams.forEach {
-            call.addParameter(it.name, References.IrType)
-            kdoc.addStatement("@param %L %L", it.name, it.callKdoc())
-        }
-
-        addValueParameters(valueParameters, useVararg, call, body, kdoc)
-
-        kdoc.addStatement("@return %L", constructedClass.kdoc)
-        call.addKdoc(kdoc.build())
-        call.addStatement("return %L", body.endControlFlow().build())
-
-    }
-
-    private fun ExportDeclaration.Function.buildFunction(
-        builder: TypeSpec.Builder,
-        kdoc: CodeBlock.Builder
-    ) {
-        dispatchReceiver?.let {
-            kdoc.addStatement("Dispatch receiver: %L", it.type.kdoc)
-            kdoc.add("\n")
-        }
-
-        if (extensionReceivers.isNotEmpty()) {
-            if (extensionReceivers.size > 1) {
-                error("Multiple receivers not yet supported")
-            }
-            val extensionReceiver = extensionReceivers.single()
-            kdoc.addStatement("Extension receiver: %L", extensionReceiver.type.kdoc)
-            kdoc.add("\n")
-        }
-
-        kdoc.addListBlock("Value parameters:", valueParameters) { it.classKdoc() }
-
-        kdoc.addStatement("Return type: %L", returnType.kdoc)
-
-        val call = FunSpec.builder("call")
-            .returns(References.IrCall)
-        this.buildFunctionCall(call, false)
-        builder.addFunction(call.build())
-
-        if (valueParameters.any { it.varargs }) {
-            val callVararg = FunSpec.builder("callVararg")
-                .returns(References.IrCall)
-            this.buildFunctionCall(callVararg, true)
-            builder.addFunction(callVararg.build())
-        }
-    }
-
     //TODO builder/lambda for lambda arguments
-    private fun ExportDeclaration.Function.buildFunctionCall(call: FunSpec.Builder, useVararg: Boolean) {
-        call.addParameter("builder", References.IrBuilderWithScope)
-        val body = CodeBlock.builder().beginControlFlow("builder.%M(this).apply{", References.irCall)
-        val kdoc = CodeBlock.builder().addStatement("Call the function").add("\n")
+    private fun buildFunctionCall(
+        name: String,
+        header: String,
+        returnType: TypeName,
+        callFunction: CodeBlock,
+        typeParameters: List<ExportDeclaration.TypeParameter>,
+        dispatchReceiver: ExportDeclaration.Receiver?,
+        extensionReceivers: List<ExportDeclaration.Receiver>,
+        valueParameters: List<ExportDeclaration.Param>,
+        irReturnTypeString: TypeString,
+        irReturnType: CodeBlock,
+        useVararg: Boolean
+    ): FunSpec {
+        val builder = FunSpec.builder(name)
+        builder.returns(returnType)
+
+        builder.addParameter("builder", References.IrBuilderWithScope)
+        val body = CodeBlock.builder().beginControlFlow("builder.%L.apply{", callFunction)
+        val kdoc = CodeBlock.builder().addStatement(header).add("\n")
 
         typeParameters.forEach {
-            call.addParameter(it.name, References.IrType)
+            builder.addParameter(it.name, References.IrType)
             body.addStatement("putTypeArgument(%L, %L)", it.index, it.name)
             kdoc.addStatement("@param %L %L", it.name, it.callKdoc())
         }
 
         dispatchReceiver?.let {
-            call.addParameter("dispatchReceiver", References.IrExpression)
+            builder.addParameter("dispatchReceiver", References.IrExpression)
             body.addStatement("this.dispatchReceiver = dispatchReceiver")
             kdoc.addStatement("@param %L %L", "dispatchReceiver", it.type.kdoc)
         }
@@ -268,21 +342,22 @@ internal object ResolvedBuilder {
                 error("Multiple receivers not yet supported")
             }
             val extensionReceiver = extensionReceivers.single()
-            call.addParameter("extensionReceiver", References.IrExpression)
+            builder.addParameter("extensionReceiver", References.IrExpression)
             body.addStatement("this.extensionReceiver = extensionReceiver")
             kdoc.addStatement("@param %L %L", "extensionReceiver", extensionReceiver.type.kdoc)
         }
 
         if (typeParameters.isNotEmpty()) {
-            body.addStatement("type = owner.returnType.%M(%M)", References.substituteTypes, References.irCallTypeSubstitutionMap)
+            body.addStatement("type = %L.%M(%M)", irReturnType, References.substituteTypes, References.irCallTypeSubstitutionMap)
         } else {
-            body.addStatement("type = owner.returnType")
+            body.addStatement("type = %L", irReturnType)
         }
 
-        addValueParameters(valueParameters, useVararg, call, body, kdoc)
+        addValueParameters(valueParameters, useVararg, builder, body, kdoc)
 
-        kdoc.addStatement("@return %L", returnType.kdoc)
-        call.addKdoc(kdoc.build())
-        call.addStatement("return %L", body.endControlFlow().build())
+        kdoc.addStatement("@return %L", irReturnTypeString.kdoc)
+        builder.addKdoc(kdoc.build())
+        builder.addStatement("return %L", body.endControlFlow().build())
+        return builder.build()
     }
 }

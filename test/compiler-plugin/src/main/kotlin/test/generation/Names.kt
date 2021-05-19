@@ -19,6 +19,8 @@ import org.jetbrains.kotlin.ir.builders.irVararg
 import org.jetbrains.kotlin.ir.expressions.IrCall
 import org.jetbrains.kotlin.ir.expressions.IrConstructorCall
 import org.jetbrains.kotlin.ir.expressions.IrExpression
+import org.jetbrains.kotlin.ir.symbols.IrFieldSymbol
+import org.jetbrains.kotlin.ir.symbols.IrSimpleFunctionSymbol
 import org.jetbrains.kotlin.ir.types.IrSimpleType
 import org.jetbrains.kotlin.ir.types.IrType
 import org.jetbrains.kotlin.ir.types.IrTypeArgument
@@ -168,7 +170,6 @@ public class ResolvedNames(
         ) {
             /**
              * Get the class's type.
-             *
              */
             public val type: IrSimpleType = owner.typeWith()
 
@@ -184,7 +185,6 @@ public class ResolvedNames(
 
             /**
              * Get the class's type.
-             *
              */
             public fun type(): IrSimpleType = typeWithArguments(listOf());
 
@@ -205,7 +205,6 @@ public class ResolvedNames(
             ) {
                 /**
                  * Get the constructed type.
-                 *
                  */
                 public val constructedType: IrType = owner.constructedClassType
 
@@ -217,6 +216,7 @@ public class ResolvedNames(
                  */
                 public fun call(builder: IrBuilderWithScope, n: IrExpression): IrConstructorCall =
                     builder.irCallConstructor(this, listOf()).apply {
+                        type = owner.returnType
                         putValueArgument(0, n)
                     }
 
@@ -239,7 +239,6 @@ public class ResolvedNames(
             ) {
                 /**
                  * Get the constructed type.
-                 *
                  */
                 public val constructedType: IrType = owner.constructedClassType
 
@@ -251,6 +250,7 @@ public class ResolvedNames(
                  */
                 public fun call(builder: IrBuilderWithScope, s: IrExpression): IrConstructorCall =
                     builder.irCallConstructor(this, listOf()).apply {
+                        type = owner.returnType
                         putValueArgument(0, s)
                     }
 
@@ -268,13 +268,11 @@ public class ResolvedNames(
             ) {
                 /**
                  * Get the class's type.
-                 *
                  */
                 public val type: IrSimpleType = owner.typeWith()
 
                 /**
                  * Get the class's type.
-                 *
                  */
                 public fun type(): IrSimpleType = typeWithArguments(listOf());
             }
@@ -294,9 +292,54 @@ public class ResolvedNames(
             ) {
                 /**
                  * Get the property's type.
-                 *
                  */
                 public val type: IrType = (owner.getter?.returnType ?: owner.backingField?.type)!!
+
+                /**
+                 * The getter
+                 */
+                public val getter: IrSimpleFunctionSymbol = owner.getter!!.symbol
+
+                /**
+                 * The setter
+                 */
+                public val setter: IrSimpleFunctionSymbol = owner.setter!!.symbol
+
+                /**
+                 * The backing field
+                 */
+                public val backingField: IrFieldSymbol = owner.backingField!!.symbol
+
+                /**
+                 * Call the getter
+                 *
+                 * @param dispatchReceiver `tester.TestClass`
+                 * @return `kotlin.Int`
+                 */
+                public fun `get`(builder: IrBuilderWithScope, dispatchReceiver: IrExpression):
+                        IrCall = builder.irCall(owner.getter!!.symbol).apply {
+                    this.dispatchReceiver = dispatchReceiver
+                    type = owner.getter!!.returnType
+                }
+
+
+                /**
+                 * Call the setter
+                 *
+                 * @param dispatchReceiver `tester.TestClass`
+                 * @param value `kotlin.Int`
+                 * @return `kotlin.Unit`
+                 */
+                public fun `set`(
+                    builder: IrBuilderWithScope,
+                    dispatchReceiver: IrExpression,
+                    `value`: IrExpression
+                ): IrCall = builder.irCall(owner.setter!!.symbol).apply {
+                    this.dispatchReceiver = dispatchReceiver
+                    type = owner.setter!!.returnType
+                    putValueArgument(0, value)
+                }
+
             }
         }
 
@@ -312,7 +355,6 @@ public class ResolvedNames(
         ) {
             /**
              * Get the expanded type.
-             *
              */
             public val type: IrType = owner.expandedType
         }
@@ -332,7 +374,6 @@ public class ResolvedNames(
         ) {
             /**
              * Get the expanded type.
-             *
              *
              * @param T `?`
              */
@@ -361,14 +402,12 @@ public class ResolvedNames(
             /**
              * Get the class's type.
              *
-             *
              * @param T `? : kotlin.Number`
              */
             public fun type(T: IrType): IrSimpleType = owner.typeWith(T)
 
             /**
              * Get the class's type.
-             *
              *
              * @param T `? : kotlin.Number`
              */
@@ -396,7 +435,6 @@ public class ResolvedNames(
                 /**
                  * Get the constructed type.
                  *
-                 *
                  * @param T `? : kotlin.Number`
                  */
                 public fun constructedType(T: IrType): IrType =
@@ -417,6 +455,8 @@ public class ResolvedNames(
                     T: IrType,
                     n: IrExpression
                 ): IrConstructorCall = builder.irCallConstructor(this, listOf(T)).apply {
+                    putTypeArgument(0, T)
+                    type = owner.returnType.substitute(typeSubstitutionMap)
                     putValueArgument(0, n)
                 }
 
@@ -440,13 +480,35 @@ public class ResolvedNames(
             Names.tester.testPropWithTypeVar.fqName
         ) {
             /**
+             * The getter
+             */
+            public val getter: IrSimpleFunctionSymbol = owner.getter!!.symbol
+
+            /**
              * Get the property's type.
-             *
              *
              * @param T `? : kotlin.Number`
              */
             public fun type(T: IrType): IrType =
                 (owner.getter?.returnType ?: owner.backingField?.type)!!.substitute(owner.getter!!.typeParameters, listOf(T))
+
+            /**
+             * Call the getter
+             *
+             * @param T `? : kotlin.Number`
+             * @param extensionReceiver `T of tester.<get-testPropWithTypeVar>`
+             * @return `kotlin.Int`
+             */
+            public fun `get`(
+                builder: IrBuilderWithScope,
+                T: IrType,
+                extensionReceiver: IrExpression
+            ): IrCall = builder.irCall(owner.getter!!.symbol).apply {
+                putTypeArgument(0, T)
+                this.extensionReceiver = extensionReceiver
+                type = owner.getter!!.returnType.substitute(typeSubstitutionMap)
+            }
+
         }
 
         /**
@@ -462,7 +524,6 @@ public class ResolvedNames(
         ) {
             /**
              * Get the return type.
-             *
              */
             public val returnType: IrType = owner.returnType
 
@@ -493,7 +554,6 @@ public class ResolvedNames(
         ) {
             /**
              * Get the return type.
-             *
              */
             public val returnType: IrType = owner.returnType
 
@@ -534,7 +594,6 @@ public class ResolvedNames(
         ) {
             /**
              * Get the return type.
-             *
              *
              * @param T `?`
              */

@@ -12,8 +12,21 @@ sealed class ExportDeclaration {
 
         }
 
-        fun serialize(declarations: Iterable<ExportDeclaration>): String = json.encodeToString(declarations.toList())
-        fun deserialize(data: String): List<ExportDeclaration> = json.decodeFromString(data)
+        fun serialize(declarations: Iterable<ExportDeclaration>): String {
+            try {
+                return json.encodeToString(declarations.toList())
+            } catch (e: Throwable) {
+                throw IllegalStateException("Could not serialize exported declarations", e)
+            }
+        }
+
+        fun deserialize(data: String): List<ExportDeclaration> {
+            try {
+                return json.decodeFromString(data)
+            } catch (e: Throwable) {
+                throw IllegalStateException("Could not deserialize exported declarations", e)
+            }
+        }
     }
 
     abstract val fqName: ResolvedName
@@ -61,7 +74,7 @@ sealed class ExportDeclaration {
     data class Property(
         override val fqName: ResolvedName,
         override val signature: Signature,
-        val returnType: TypeString,
+        val valueType: TypeString,
         val dispatchReceiver: Receiver?,
         val extensionReceivers: List<Receiver>,
         val typeParameters: List<TypeParameter>,

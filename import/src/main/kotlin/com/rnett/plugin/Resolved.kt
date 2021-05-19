@@ -11,6 +11,7 @@ import org.jetbrains.kotlin.ir.symbols.IrClassSymbol
 import org.jetbrains.kotlin.ir.symbols.IrConstructorSymbol
 import org.jetbrains.kotlin.ir.symbols.IrPropertySymbol
 import org.jetbrains.kotlin.ir.symbols.IrSimpleFunctionSymbol
+import org.jetbrains.kotlin.ir.symbols.IrSymbol
 import org.jetbrains.kotlin.ir.symbols.IrTypeAliasSymbol
 import org.jetbrains.kotlin.ir.types.IrType
 import org.jetbrains.kotlin.name.FqName
@@ -19,11 +20,9 @@ sealed class ResolvedReference<S : IrBindableSymbol<*, T>, T : IrDeclaration>(va
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
-        if (other !is ResolvedReference<*, *>) return false
-
-        if (symbol != other.symbol) return false
-
-        return true
+        if (symbol === other) return true
+        if (other is IrSymbol && symbol == other) return true
+        return false
     }
 
     override fun hashCode(): Int {
