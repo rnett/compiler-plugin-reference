@@ -39,10 +39,13 @@ object References {
     val IrExpression = ClassName.bestGuess("org.jetbrains.kotlin.ir.expressions.IrExpression")
     val IrCall = ClassName.bestGuess("org.jetbrains.kotlin.ir.expressions.IrCall")
     val IrConstructorCall = ClassName.bestGuess("org.jetbrains.kotlin.ir.expressions.IrConstructorCall")
+    val IrProperty = ClassName.bestGuess("org.jetbrains.kotlin.ir.declarations.IrProperty")
 
     val IrStarProjectionImpl = ClassName.bestGuess("org.jetbrains.kotlin.ir.types.impl.IrStarProjectionImpl")
 
     val irCall = MemberName("org.jetbrains.kotlin.ir.builders", "irCall")
+    val isGetter = MemberName("org.jetbrains.kotlin.ir.util", "isGetter")
+    val isSetter = MemberName("org.jetbrains.kotlin.ir.util", "isSetter")
     val irCallConstructor = MemberName("org.jetbrains.kotlin.ir.builders", "irCallConstructor")
     val irVararg = MemberName("org.jetbrains.kotlin.ir.builders", "irVararg")
     val irCallTypeSubstitutionMap = MemberName("org.jetbrains.kotlin.ir.util", "typeSubstitutionMap")

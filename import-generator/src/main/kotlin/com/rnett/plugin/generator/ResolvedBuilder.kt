@@ -14,14 +14,14 @@ import com.squareup.kotlinpoet.TypeSpec
 import com.squareup.kotlinpoet.asTypeName
 
 internal object ResolvedBuilder {
-    fun build(builder: TypeSpec.Builder, current: ClassName, declarationTree: DeclarationTree) {
+    fun build(builder: TypeSpec.Builder, namesBuilder: TypeSpec.Builder, current: ClassName, declarationTree: DeclarationTree) {
         builder.addContextProperty()
 
         if (declarationTree is DeclarationTree.Package) {
             builder.addContextConstructor()
         } // added in build otherwise
 
-        declarationTree.declaration?.let { builder.build(it) }
+        declarationTree.declaration?.let { builder.build(it, namesBuilder, current) }
 
         declarationTree.children.forEach {
             val type = current.nestedClass(it.displayName)
@@ -34,7 +34,7 @@ internal object ResolvedBuilder {
         }
     }
 
-    private fun TypeSpec.Builder.build(declaration: ExportDeclaration) {
+    private fun TypeSpec.Builder.build(declaration: ExportDeclaration, namesBuilder: TypeSpec.Builder, current: ClassName) {
         val kdoc = CodeBlock.builder()
         kdoc.addStatement("Resolved reference to `${declaration.fqName.fqName}`")
         kdoc.add("\n")
@@ -74,6 +74,10 @@ internal object ResolvedBuilder {
         }
 
         addKdoc(kdoc.build())
+
+        val (types, builders) = InstanceBuilder.buildInstance(current, declaration)
+        namesBuilder.addFunctions(builders)
+        addTypes(types)
     }
 
     //TODO call wrappers, i.e. to extract parameters.  Especially for annotations
@@ -187,7 +191,8 @@ internal object ResolvedBuilder {
             valueParameters,
             constructedClass,
             CodeBlock.of("owner.returnType"),
-            useVararg
+            useVararg,
+            putTypeParams = false
         )
 
     }
@@ -282,7 +287,8 @@ internal object ResolvedBuilder {
         valueParameters: List<ExportDeclaration.Param>,
         irReturnTypeString: TypeString,
         irReturnType: CodeBlock,
-        useVararg: Boolean
+        useVararg: Boolean,
+        putTypeParams: Boolean = true
     ): FunSpec {
         val builder = FunSpec.builder(name)
         builder.returns(returnType)
@@ -293,7 +299,8 @@ internal object ResolvedBuilder {
 
         typeParameters.forEach {
             builder.addParameter(it.name, References.IrType)
-            body.addStatement("putTypeArgument(%L, %L)", it.index, it.name)
+            if (putTypeParams)
+                body.addStatement("putTypeArgument(%L, %L)", it.index, it.name)
             kdoc.addStatement("@param %L %L", it.name, it.callKdoc())
         }
 

@@ -43,13 +43,14 @@ object PluginImportGenerator {
     fun generate(fqName: ClassName, declarationTree: DeclarationTree): TypeSpec {
         val builder = TypeSpec.classBuilder(fqName.simpleNames.last())
 
-        ResolvedBuilder.build(builder, fqName, declarationTree)
+        val namesBuilder = ReferenceBuilder.referenceObject(declarationTree, fqName).toBuilder()
+        ResolvedBuilder.build(builder, namesBuilder, fqName, declarationTree)
 
         declarationTree.children.forEach {
             builder.addType(generate(fqName.nestedClass(it.displayName), it))
         }
 
-        builder.addType(ReferenceBuilder.referenceObject(declarationTree, fqName))
+        builder.addType(namesBuilder.build())
         return builder.build()
     }
 

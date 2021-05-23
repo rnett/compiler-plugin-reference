@@ -16,6 +16,7 @@ import org.jetbrains.kotlin.ir.builders.IrBuilderWithScope
 import org.jetbrains.kotlin.ir.builders.irCall
 import org.jetbrains.kotlin.ir.builders.irCallConstructor
 import org.jetbrains.kotlin.ir.builders.irVararg
+import org.jetbrains.kotlin.ir.declarations.IrProperty
 import org.jetbrains.kotlin.ir.expressions.IrCall
 import org.jetbrains.kotlin.ir.expressions.IrConstructorCall
 import org.jetbrains.kotlin.ir.expressions.IrExpression
@@ -34,6 +35,8 @@ import org.jetbrains.kotlin.ir.types.typeWithArguments
 import org.jetbrains.kotlin.ir.util.IdSignature
 import org.jetbrains.kotlin.ir.util.constructedClass
 import org.jetbrains.kotlin.ir.util.constructedClassType
+import org.jetbrains.kotlin.ir.util.isGetter
+import org.jetbrains.kotlin.ir.util.isSetter
 import org.jetbrains.kotlin.ir.util.substitute
 import org.jetbrains.kotlin.ir.util.typeSubstitutionMap
 import org.jetbrains.kotlin.name.FqName
@@ -126,6 +129,21 @@ public class Names(
                         }
 
 
+                    public class Instance(
+                        public val call: IrConstructorCall
+                    ) {
+                        init {
+                            val signature = call.symbol.signature
+                            val requiredSignature = ctor.signature
+                            require(signature == requiredSignature) {
+                                """Instance's signature $signature did not match the required signature of $requiredSignature"""
+                            }
+                        }
+
+                        public val n: IrExpression?
+                            get() = call.getValueArgument(0)
+                    }
+
                     public companion object Reference :
                         ConstructorReference<ctor>(
                             FqName("tester.second.TestClass"),
@@ -138,6 +156,16 @@ public class Names(
                             context: IrPluginContext,
                             symbol: IrConstructorSymbol
                         ): ctor = ctor(context, symbol)
+
+                        public fun instance(call: IrConstructorCall): Instance = Instance(call)
+
+                        public fun instanceOrNull(call: IrConstructorCall): Instance? {
+                            if (call.symbol.signature == ctor.signature) {
+                                return Instance(call)
+                            } else {
+                                return null
+                            }
+                        }
                     }
                 }
 
@@ -177,6 +205,21 @@ public class Names(
                         }
 
 
+                    public class Instance(
+                        public val call: IrConstructorCall
+                    ) {
+                        init {
+                            val signature = call.symbol.signature
+                            val requiredSignature = fromString.signature
+                            require(signature == requiredSignature) {
+                                """Instance's signature $signature did not match the required signature of $requiredSignature"""
+                            }
+                        }
+
+                        public val s: IrExpression?
+                            get() = call.getValueArgument(0)
+                    }
+
                     public companion object Reference :
                         ConstructorReference<fromString>(
                             FqName("tester.second.TestClass"),
@@ -192,6 +235,16 @@ public class Names(
                             context,
                             symbol
                         )
+
+                        public fun instance(call: IrConstructorCall): Instance = Instance(call)
+
+                        public fun instanceOrNull(call: IrConstructorCall): Instance? {
+                            if (call.symbol.signature == fromString.signature) {
+                                return Instance(call)
+                            } else {
+                                return null
+                            }
+                        }
                     }
                 }
 
@@ -295,6 +348,47 @@ public class Names(
                     }
 
 
+                    public open class Instance(
+                        public val call: IrCall
+                    ) {
+                        init {
+                            val signature = call.symbol.owner.correspondingPropertySymbol?.signature
+                            val requiredSignature = n.signature
+                            require(signature == requiredSignature) {
+                                """Instance's signature $signature did not match the required signature of $requiredSignature"""
+                            }
+                        }
+
+                        public val dispatchReceiver: IrExpression?
+                            get() = call.dispatchReceiver
+
+                        public val `property`: IrProperty
+                            get() = call.symbol.owner.correspondingPropertySymbol!!.owner
+                    }
+
+                    public class GetterInstance(
+                        call: IrCall
+                    ) : Instance(call) {
+                        init {
+                            require(call.symbol.owner.isGetter) {
+                                """Instance ${call.symbol} is not the right type of accessor, expected a getter"""
+                            }
+                        }
+                    }
+
+                    public class SetterInstance(
+                        call: IrCall
+                    ) : Instance(call) {
+                        init {
+                            require(call.symbol.owner.isSetter) {
+                                """Instance ${call.symbol} is not the right type of accessor, expected a setter"""
+                            }
+                        }
+
+                        public val `value`: IrExpression?
+                            get() = call.getValueArgument(0)
+                    }
+
                     public companion object Reference :
                         PropertyReference<n>(
                             FqName("tester.second.TestClass.n"),
@@ -307,6 +401,44 @@ public class Names(
                             context: IrPluginContext,
                             symbol: IrPropertySymbol
                         ): n = n(context, symbol)
+
+                        public fun accessorInstance(call: IrCall): Instance = Instance(call)
+
+                        public fun accessorInstanceOrNull(call: IrCall): Instance? {
+                            if (call.symbol.owner.correspondingPropertySymbol?.signature ==
+                                n.signature
+                            ) {
+                                return Instance(call)
+                            } else {
+                                return null
+                            }
+                        }
+
+                        public fun getterInstance(call: IrCall): GetterInstance =
+                            GetterInstance(call)
+
+                        public fun getterInstanceOrNull(call: IrCall): GetterInstance? {
+                            if (call.symbol.owner.correspondingPropertySymbol?.signature ==
+                                n.signature && call.symbol.owner.isGetter
+                            ) {
+                                return GetterInstance(call)
+                            } else {
+                                return null
+                            }
+                        }
+
+                        public fun setterInstance(call: IrCall): SetterInstance =
+                            SetterInstance(call)
+
+                        public fun setterInstanceOrNull(call: IrCall): SetterInstance? {
+                            if (call.symbol.owner.correspondingPropertySymbol?.signature ==
+                                n.signature && call.symbol.owner.isSetter
+                            ) {
+                                return SetterInstance(call)
+                            } else {
+                                return null
+                            }
+                        }
                     }
                 }
 
@@ -345,6 +477,8 @@ public class Names(
 
                 public constructor(context: IrPluginContext) : this(context, resolveSymbol(context))
 
+                public class Instance
+
                 public companion object Reference :
                     TypealiasReference<TestTypealias>(
                         FqName("tester.second.TestTypealias"),
@@ -380,6 +514,8 @@ public class Names(
                  */
                 public fun type(T: IrType): IrType =
                     owner.expandedType.substitute(owner.typeParameters, listOf(T))
+
+                public class Instance
 
                 public companion object Reference :
                     TypealiasReference<TestTypealiasWithArg>(
@@ -472,11 +608,28 @@ public class Names(
                         T: IrType,
                         n: IrExpression
                     ): IrConstructorCall = builder.irCallConstructor(this, listOf(T)).apply {
-                        putTypeArgument(0, T)
                         type = owner.returnType.substitute(typeSubstitutionMap)
                         putValueArgument(0, n)
                     }
 
+
+                    public class Instance(
+                        public val call: IrConstructorCall
+                    ) {
+                        init {
+                            val signature = call.symbol.signature
+                            val requiredSignature = ctor.signature
+                            require(signature == requiredSignature) {
+                                """Instance's signature $signature did not match the required signature of $requiredSignature"""
+                            }
+                        }
+
+                        public val T: IrType?
+                            get() = call.getTypeArgument(0)
+
+                        public val n: IrExpression?
+                            get() = call.getValueArgument(0)
+                    }
 
                     public companion object Reference :
                         ConstructorReference<ctor>(
@@ -490,6 +643,16 @@ public class Names(
                             context: IrPluginContext,
                             symbol: IrConstructorSymbol
                         ): ctor = ctor(context, symbol)
+
+                        public fun instance(call: IrConstructorCall): Instance = Instance(call)
+
+                        public fun instanceOrNull(call: IrConstructorCall): Instance? {
+                            if (call.symbol.signature == ctor.signature) {
+                                return Instance(call)
+                            } else {
+                                return null
+                            }
+                        }
                     }
                 }
 
@@ -556,6 +719,37 @@ public class Names(
                 }
 
 
+                public open class Instance(
+                    public val call: IrCall
+                ) {
+                    init {
+                        val signature = call.symbol.owner.correspondingPropertySymbol?.signature
+                        val requiredSignature = testPropWithTypeVar.signature
+                        require(signature == requiredSignature) {
+                            """Instance's signature $signature did not match the required signature of $requiredSignature"""
+                        }
+                    }
+
+                    public val T: IrType?
+                        get() = call.getTypeArgument(0)
+
+                    public val extensionReceiver: IrExpression?
+                        get() = call.extensionReceiver
+
+                    public val `property`: IrProperty
+                        get() = call.symbol.owner.correspondingPropertySymbol!!.owner
+                }
+
+                public class GetterInstance(
+                    call: IrCall
+                ) : Instance(call) {
+                    init {
+                        require(call.symbol.owner.isGetter) {
+                            """Instance ${call.symbol} is not the right type of accessor, expected a getter"""
+                        }
+                    }
+                }
+
                 public companion object Reference :
                     PropertyReference<testPropWithTypeVar>(
                         FqName("tester.second.testPropWithTypeVar"),
@@ -569,6 +763,30 @@ public class Names(
                         symbol: IrPropertySymbol
                     ): testPropWithTypeVar =
                         testPropWithTypeVar(context, symbol)
+
+                    public fun accessorInstance(call: IrCall): Instance = Instance(call)
+
+                    public fun accessorInstanceOrNull(call: IrCall): Instance? {
+                        if (call.symbol.owner.correspondingPropertySymbol?.signature ==
+                            testPropWithTypeVar.signature
+                        ) {
+                            return Instance(call)
+                        } else {
+                            return null
+                        }
+                    }
+
+                    public fun getterInstance(call: IrCall): GetterInstance = GetterInstance(call)
+
+                    public fun getterInstanceOrNull(call: IrCall): GetterInstance? {
+                        if (call.symbol.owner.correspondingPropertySymbol?.signature ==
+                            testPropWithTypeVar.signature && call.symbol.owner.isGetter
+                        ) {
+                            return GetterInstance(call)
+                        } else {
+                            return null
+                        }
+                    }
                 }
             }
 
@@ -598,6 +816,18 @@ public class Names(
                 }
 
 
+                public class Instance(
+                    public val call: IrCall
+                ) {
+                    init {
+                        val signature = call.symbol.signature
+                        val requiredSignature = testPublishedApi.signature
+                        require(signature == requiredSignature) {
+                            """Instance's signature $signature did not match the required signature of $requiredSignature"""
+                        }
+                    }
+                }
+
                 public companion object Reference :
                     FunctionReference<testPublishedApi>(
                         FqName("tester.second.testPublishedApi"),
@@ -611,6 +841,16 @@ public class Names(
                         symbol: IrSimpleFunctionSymbol
                     ): testPublishedApi =
                         testPublishedApi(context, symbol)
+
+                    public fun instance(call: IrCall): Instance = Instance(call)
+
+                    public fun instanceOrNull(call: IrCall): Instance? {
+                        if (call.symbol.signature == testPublishedApi.signature) {
+                            return Instance(call)
+                        } else {
+                            return null
+                        }
+                    }
                 }
             }
 
@@ -646,6 +886,21 @@ public class Names(
                     }
 
 
+                public class Instance(
+                    public val call: IrCall
+                ) {
+                    init {
+                        val signature = call.symbol.signature
+                        val requiredSignature = testPublishedApi_1.signature
+                        require(signature == requiredSignature) {
+                            """Instance's signature $signature did not match the required signature of $requiredSignature"""
+                        }
+                    }
+
+                    public val t: IrExpression?
+                        get() = call.getValueArgument(0)
+                }
+
                 public companion object Reference :
                     FunctionReference<testPublishedApi_1>(
                         FqName("tester.second.testPublishedApi"),
@@ -659,6 +914,16 @@ public class Names(
                         symbol: IrSimpleFunctionSymbol
                     ): testPublishedApi_1 =
                         testPublishedApi_1(context, symbol)
+
+                    public fun instance(call: IrCall): Instance = Instance(call)
+
+                    public fun instanceOrNull(call: IrCall): Instance? {
+                        if (call.symbol.signature == testPublishedApi_1.signature) {
+                            return Instance(call)
+                        } else {
+                            return null
+                        }
+                    }
                 }
             }
 
@@ -755,6 +1020,33 @@ public class Names(
                 }
 
 
+                public class Instance(
+                    public val call: IrCall
+                ) {
+                    init {
+                        val signature = call.symbol.signature
+                        val requiredSignature = testTopLevelFunction.signature
+                        require(signature == requiredSignature) {
+                            """Instance's signature $signature did not match the required signature of $requiredSignature"""
+                        }
+                    }
+
+                    public val T: IrType?
+                        get() = call.getTypeArgument(0)
+
+                    public val req: IrExpression?
+                        get() = call.getValueArgument(0)
+
+                    public val opt: IrExpression?
+                        get() = call.getValueArgument(1)
+
+                    public val t: IrExpression?
+                        get() = call.getValueArgument(2)
+
+                    public val extensionReceiver: IrExpression?
+                        get() = call.extensionReceiver
+                }
+
                 public companion object Reference :
                     FunctionReference<testTopLevelFunction>(
                         FqName("tester.second.testTopLevelFunction"),
@@ -768,6 +1060,16 @@ public class Names(
                         symbol: IrSimpleFunctionSymbol
                     ): testTopLevelFunction =
                         testTopLevelFunction(context, symbol)
+
+                    public fun instance(call: IrCall): Instance = Instance(call)
+
+                    public fun instanceOrNull(call: IrCall): Instance? {
+                        if (call.symbol.signature == testTopLevelFunction.signature) {
+                            return Instance(call)
+                        } else {
+                            return null
+                        }
+                    }
                 }
             }
 
