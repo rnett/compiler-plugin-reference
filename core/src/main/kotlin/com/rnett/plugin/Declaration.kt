@@ -82,6 +82,7 @@ sealed class ExportDeclaration {
         val hasGetter: Boolean,
         val hasSetter: Boolean,
         val hasField: Boolean,
+        val constantValue: ConstantValue?,
         override val customName: String? = null
     ) : ExportDeclaration()
 

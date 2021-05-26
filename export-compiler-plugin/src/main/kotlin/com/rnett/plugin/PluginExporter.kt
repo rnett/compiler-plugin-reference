@@ -27,6 +27,7 @@ import org.jetbrains.kotlin.ir.declarations.IrValueParameter
 import org.jetbrains.kotlin.ir.declarations.path
 import org.jetbrains.kotlin.ir.descriptors.toIrBasedDescriptor
 import org.jetbrains.kotlin.ir.expressions.IrConst
+import org.jetbrains.kotlin.ir.expressions.IrConstKind
 import org.jetbrains.kotlin.ir.symbols.IrClassSymbol
 import org.jetbrains.kotlin.ir.symbols.IrScriptSymbol
 import org.jetbrains.kotlin.ir.symbols.IrTypeParameterSymbol
@@ -158,6 +159,19 @@ class PluginExporter(val context: IrPluginContext, val messageCollector: Message
     @OptIn(ObsoleteDescriptorBasedAPI::class)
     fun KotlinType.toIrType() = context.typeTranslator.translateType(this)
 
+    fun IrConst<*>.toConstValue(): ConstantValue = when (kind) {
+        IrConstKind.Null -> ConstantValue.Null
+        IrConstKind.Boolean -> ConstantValue.Boolean(value as Boolean)
+        IrConstKind.Char -> ConstantValue.Char(value as Char)
+        IrConstKind.Byte -> ConstantValue.Byte(value as Byte)
+        IrConstKind.Short -> ConstantValue.Short(value as Short)
+        IrConstKind.Int -> ConstantValue.Int(value as Int)
+        IrConstKind.Long -> ConstantValue.Long(value as Long)
+        IrConstKind.String -> ConstantValue.String(value as String)
+        IrConstKind.Float -> ConstantValue.Float(value as Float)
+        IrConstKind.Double -> ConstantValue.Double(value as Double)
+    }
+
     private fun IrClass.getDeclaration(): ExportDeclaration.Class =
         ExportDeclaration.Class(
             resolvedName,
@@ -189,6 +203,11 @@ class PluginExporter(val context: IrPluginContext, val messageCollector: Message
 
     private fun IrProperty.getDeclaration(): ExportDeclaration.Property {
         val descriptor = toIrBasedDescriptor()
+
+        val constValue: IrConst<*>? = if (isConst) {
+            backingField?.initializer?.expression as? IrConst<*>
+        } else null
+
         return ExportDeclaration.Property(
             resolvedName,
             publicSignature,
@@ -199,6 +218,7 @@ class PluginExporter(val context: IrPluginContext, val messageCollector: Message
             getter != null,
             setter != null,
             backingField != null,
+            constValue?.toConstValue(),
             displayName
         )
     }

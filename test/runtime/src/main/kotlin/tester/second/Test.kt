@@ -3,6 +3,9 @@ package tester.second
 import com.rnett.plugin.export.annotations.PluginExport
 
 @PluginExport
+const val testConst: String = "test"
+
+@PluginExport
 class TestClass @PluginExport constructor(@PluginExport var n: Int) {
     @PluginExport("fromString")
     constructor(s: String) : this(s.toInt())

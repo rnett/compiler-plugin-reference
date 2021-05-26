@@ -39,7 +39,7 @@ object InstanceBuilder {
             return listOf(builder.build()) to builders
     }
 
-    fun TypeSpec.Builder.addSignatureCheck(signature: CodeBlock, className: ClassName) {
+    private fun TypeSpec.Builder.addSignatureCheck(signature: CodeBlock, className: ClassName) {
         addInitializerBlock(
             CodeBlock.builder()
                 .addStatement("val signature = %L", signature)

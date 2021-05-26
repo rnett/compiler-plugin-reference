@@ -62,6 +62,8 @@ public class Names(
 
             public fun WithTypeParams(): WithTypeParams = WithTypeParams(_context)
 
+            public fun testConst(): testConst = testConst(_context)
+
             public fun testPropWithTypeVar(): testPropWithTypeVar = testPropWithTypeVar(_context)
 
             public fun testPublishedApi(): testPublishedApi = testPublishedApi(_context)
@@ -671,6 +673,109 @@ public class Names(
             }
 
             /**
+             * Resolved reference to `tester.second.testConst`
+             *
+             * Type: `kotlin.String`
+             */
+            public class testConst private constructor(
+                private val _context: IrPluginContext,
+                symbol: IrPropertySymbol
+            ) : ResolvedProperty(symbol, fqName) {
+                /**
+                 * Get the property's type.
+                 */
+                public val type: IrType = (owner.getter?.returnType ?: owner.backingField?.type)!!
+
+                /**
+                 * The getter
+                 */
+                public val getter: IrSimpleFunctionSymbol = owner.getter!!.symbol
+
+                /**
+                 * The backing field
+                 */
+                public val backingField: IrFieldSymbol = owner.backingField!!.symbol
+
+                public constructor(context: IrPluginContext) : this(context, resolveSymbol(context))
+
+                /**
+                 * Call the getter
+                 *
+                 * @return `kotlin.String`
+                 */
+                public fun `get`(builder: IrBuilderWithScope): IrCall =
+                    builder.irCall(getter).apply {
+                        type = getter.owner.returnType
+                    }
+
+
+                public open class Instance(
+                    public val call: IrCall
+                ) {
+                    init {
+                        val signature = call.symbol.owner.correspondingPropertySymbol?.signature
+                        val requiredSignature = testConst.signature
+                        require(signature == requiredSignature) {
+                            """Instance's signature $signature did not match the required signature of $requiredSignature"""
+                        }
+                    }
+
+                    public val `property`: IrProperty
+                        get() = call.symbol.owner.correspondingPropertySymbol!!.owner
+                }
+
+                public class GetterInstance(
+                    call: IrCall
+                ) : Instance(call) {
+                    init {
+                        require(call.symbol.owner.isGetter) {
+                            """Instance ${call.symbol} is not the right type of accessor, expected a getter"""
+                        }
+                    }
+                }
+
+                public companion object Reference :
+                    PropertyReference<testConst>(
+                        FqName("tester.second.testConst"),
+                        IdSignature.PublicSignature(
+                            "tester.second",
+                            "testConst", -1409218079476337607, 0
+                        )
+                    ) {
+                    public const val `value`: String = "test"
+
+                    public override fun getResolvedReference(
+                        context: IrPluginContext,
+                        symbol: IrPropertySymbol
+                    ): testConst = testConst(context, symbol)
+
+                    public fun accessorInstance(call: IrCall): Instance = Instance(call)
+
+                    public fun accessorInstanceOrNull(call: IrCall): Instance? {
+                        if (call.symbol.owner.correspondingPropertySymbol?.signature ==
+                            testConst.signature
+                        ) {
+                            return Instance(call)
+                        } else {
+                            return null
+                        }
+                    }
+
+                    public fun getterInstance(call: IrCall): GetterInstance = GetterInstance(call)
+
+                    public fun getterInstanceOrNull(call: IrCall): GetterInstance? {
+                        if (call.symbol.owner.correspondingPropertySymbol?.signature ==
+                            testConst.signature && call.symbol.owner.isGetter
+                        ) {
+                            return GetterInstance(call)
+                        } else {
+                            return null
+                        }
+                    }
+                }
+            }
+
+            /**
              * Resolved reference to `tester.second.testPropWithTypeVar`
              *
              * Type parameters:
@@ -1083,6 +1188,8 @@ public class Names(
 
                 public val WithTypeParams: WithTypeParams.Reference =
                     second.WithTypeParams.Reference
+
+                public val testConst: testConst.Reference = second.testConst.Reference
 
                 public val testPropWithTypeVar: testPropWithTypeVar.Reference =
                     second.testPropWithTypeVar.Reference
