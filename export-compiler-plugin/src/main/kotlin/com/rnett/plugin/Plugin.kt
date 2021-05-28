@@ -42,7 +42,7 @@ class PluginExportCommandLineProcessor : CommandLineProcessor {
 class PluginExportComponentRegistrar : ComponentRegistrar {
     override fun registerProjectComponents(project: MockProject, configuration: CompilerConfiguration) {
         val outputDir = configuration[PluginExportCommandLineProcessor.ARG_OUTPUT_DIR] ?: error("No option for output dir")
-        outputDir.listFiles()?.forEach { it.delete() }
+
         IrGenerationExtension.registerExtension(
             project,
             PluginExportIrGenerationExtension(
@@ -58,16 +58,24 @@ class PluginExportComponentRegistrar : ComponentRegistrar {
 
 class PluginExportIrGenerationExtension(val messageCollector: MessageCollector, val outputDir: File) : IrGenerationExtension {
     init {
-        outputDir.mkdirs()
+        if (outputDir.exists())
+            outputDir.listFiles()?.forEach { it.delete() }
     }
 
     override fun generate(moduleFragment: IrModuleFragment, pluginContext: IrPluginContext) {
         //TODO use pluginContext.referenceTopLevel()
         moduleFragment.files.forEach {
             val outputFile = outputDir.resolve(it.kotlinFqName.toString() + "_" + it.name.substringBefore('.'))
+
             val declarations: MutableList<ExportDeclaration> = mutableListOf()
             PluginExporter(pluginContext, messageCollector, declarations::add).visitFile(it)
-            outputFile.writeText(ExportDeclaration.serialize(declarations))
+
+            if (declarations.isNotEmpty()) {
+                if (!outputFile.parentFile.exists())
+                    outputFile.parentFile.mkdirs()
+
+                outputFile.writeText(ExportDeclaration.serialize(declarations))
+            }
         }
     }
 }

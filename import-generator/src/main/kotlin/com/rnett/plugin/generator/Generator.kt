@@ -28,9 +28,25 @@ fun TypeSpec.Builder.addContextProperty(): TypeSpec.Builder = apply {
 }
 
 object PluginImportGenerator {
-    fun generate(baseDirectory: File, declarations: Iterable<ExportDeclaration>, packageName: String, className: String = "Names") {
+    fun generateMultiplatform(
+        baseDirectory: File,
+        declarations: Map<String, Iterable<ExportDeclaration>>,
+        packageName: String,
+        fileName: String,
+        className: String = "Names"
+    ) {
 
-        FileSpec.builder(packageName, className).apply {
+    }
+
+    fun generateSingle(
+        baseDirectory: File,
+        declarations: Iterable<ExportDeclaration>,
+        packageName: String,
+        fileName: String,
+        className: String = "Names"
+    ) {
+
+        FileSpec.builder(packageName, fileName).apply {
             addComment("GENERATED, DO NOT EDIT")
             indent("    ")
 

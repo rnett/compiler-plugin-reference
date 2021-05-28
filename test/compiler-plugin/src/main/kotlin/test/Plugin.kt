@@ -11,7 +11,6 @@ import org.jetbrains.kotlin.compiler.plugin.CommandLineProcessor
 import org.jetbrains.kotlin.compiler.plugin.ComponentRegistrar
 import org.jetbrains.kotlin.config.CompilerConfiguration
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
-import test.generation.Names
 
 @AutoService(CommandLineProcessor::class)
 class PluginExportCommandLineProcessor : CommandLineProcessor {
@@ -37,7 +36,7 @@ class PluginExportComponentRegistrar : ComponentRegistrar {
 class PluginExportIrGenerationExtension(val messageCollector: MessageCollector) : IrGenerationExtension {
     override fun generate(moduleFragment: IrModuleFragment, pluginContext: IrPluginContext) {
         with(pluginContext) {
-            val names = Names(this)
+//            val names = Names(this)
             println()
         }
     }

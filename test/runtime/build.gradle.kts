@@ -10,15 +10,13 @@ kotlin {
     }
     sourceSets {
         val commonMain by getting {
-
+            dependencies {
+                implementation("com.rnett.compiler-plugin-reference:export")
+            }
         }
         val jvmMain by getting {
 
         }
     }
 }
-
-//dependencies {
-//    implementation("com.rnett.compiler-plugin-reference:export")
-//}
 

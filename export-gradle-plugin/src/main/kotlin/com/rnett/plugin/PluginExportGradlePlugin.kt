@@ -2,6 +2,7 @@ package com.rnett.plugin
 
 import org.gradle.api.Project
 import org.gradle.api.provider.Provider
+import org.jetbrains.kotlin.gradle.dsl.KotlinSingleTargetExtension
 import org.jetbrains.kotlin.gradle.plugin.KotlinCompilation
 import org.jetbrains.kotlin.gradle.plugin.KotlinCompilerPluginSupportPlugin
 import org.jetbrains.kotlin.gradle.plugin.SubpluginArtifact
@@ -18,11 +19,16 @@ class PluginExportGradlePlugin : KotlinCompilerPluginSupportPlugin {
         val project = target.project
 
         val basePath = project.buildDir.resolve("pluginExport")
-        val exportDir = basePath.resolve(target.name).resolve(kotlinCompilation.name)
 
-        project.tasks.getByName(kotlinCompilation.compileKotlinTaskName) {
+        val exportDir = if (project.extensions.findByType(KotlinSingleTargetExtension::class.java) != null) {
+            basePath
+        } else {
+            basePath.resolve(target.name)
+        }
+
+        project.tasks.named(kotlinCompilation.compileKotlinTaskName).configure {
             it.outputs.dir(exportDir)
-                .withPropertyName("pluginExportDir")
+                .withPropertyName("pluginExportDirOutput")
         }
 
         return project.provider {
@@ -40,5 +46,5 @@ class PluginExportGradlePlugin : KotlinCompilerPluginSupportPlugin {
         BuildConfig.PROJECT_VERSION
     )
 
-    override fun isApplicable(kotlinCompilation: KotlinCompilation<*>): Boolean = true
+    override fun isApplicable(kotlinCompilation: KotlinCompilation<*>): Boolean = kotlinCompilation.compilationName == "main"
 }

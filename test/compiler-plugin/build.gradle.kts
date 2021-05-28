@@ -13,9 +13,8 @@ dependencies {
 }
 
 pluginImport {
-    packageName = "test.generation"
-    inputDirectory = project(":runtime").buildDir.resolve("pluginExport/main")
-    outputDirectory = file("src/main/kotlin")
-    dependsOn(":runtime:compileKotlinJvm")
+    afterEvaluate {
+        import(project(":runtime"), "test.generation")
+    }
 }
 
