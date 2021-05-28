@@ -15,9 +15,8 @@ import java.io.File
 @CacheableTask
 abstract class PluginImportGenerationTask : DefaultTask() {
 
-    @Input
     @Nested
-    private val inputConfigs = mutableListOf<ImportConfig>()
+    protected val inputConfigs = mutableListOf<ImportConfig>()
 
     fun addInputConfig(config: ImportConfig) {
         inputConfigs += config
@@ -29,7 +28,7 @@ abstract class PluginImportGenerationTask : DefaultTask() {
     val outputDirectory: Property<File> = project.objects.property(File::class.java)
 
     @OutputFiles
-    private val outputFiles: Provider<List<File>> = project.provider {
+    protected val outputFiles: Provider<List<File>> = project.provider {
         val directory = outputDirectory.get()
         inputConfigs.map { it.outputFile(directory) }
 

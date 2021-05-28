@@ -6,6 +6,8 @@ import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.InputDirectory
 import org.gradle.api.tasks.Internal
 import org.gradle.api.tasks.Nested
+import org.gradle.api.tasks.PathSensitive
+import org.gradle.api.tasks.PathSensitivity
 import org.jetbrains.kotlin.gradle.dsl.KotlinMultiplatformExtension
 import org.jetbrains.kotlin.gradle.dsl.KotlinSingleTargetExtension
 import java.io.File
@@ -13,7 +15,7 @@ import java.io.File
 private fun Project.pluginExport(targetName: String): File =
     buildDir.resolve("pluginExport").resolve(targetName)
 
-data class ImportConfig(@Nested val source: ImportSourceConfig, @Input var packageName: String, @Input var fileName: String = "Names") {
+data class ImportConfig(@get:Nested val source: ImportSourceConfig, @get:Input var packageName: String, @get:Input var fileName: String = "Names") {
     internal fun outputFile(baseDir: File) =
         baseDir.resolve(packageName.replace(".", "/"))
             .resolve("${fileName}.kt")
@@ -33,9 +35,11 @@ data class ImportConfig(@Nested val source: ImportSourceConfig, @Input var packa
     fun rename(target: String, new: String, root: Boolean = false) = source.rename(target, new, root)
 }
 
-sealed class ImportSourceConfig(@Input val source: Project) {
+sealed class ImportSourceConfig() {
+    @get:Internal
+    abstract val source: Project
 
-    @get:Input
+    @get:Internal
     val dependencyTasks
         get() = dependencyTaskNames.map { source.tasks.named(it) }
 
@@ -46,16 +50,17 @@ sealed class ImportSourceConfig(@Input val source: Project) {
     abstract val isSinglePlatform: Boolean
 
     @get:InputDirectory
+    @get:PathSensitive(PathSensitivity.RELATIVE)
     abstract val inputDir: File
 
-    @Input
+    @get:Input
     protected val renames: MutableMap<String, Pair<String, Boolean>> = mutableMapOf()
 
     fun rename(target: String, new: String, root: Boolean = false) {
         renames[target] = new to root
     }
 
-    class SinglePlatform(source: Project) : ImportSourceConfig(source) {
+    data class SinglePlatform(override val source: Project) : ImportSourceConfig() {
         override val dependencyTaskNames: List<String>
             get() = (source.extensions.findByType(KotlinSingleTargetExtension::class.java)
                 ?: error("Project ${source.path} is not a single target Kotlin project, but single platform pluginExport used"))
@@ -68,7 +73,7 @@ sealed class ImportSourceConfig(@Input val source: Project) {
         override val inputDir: File = source.pluginExport("")
     }
 
-    class SingleMultiPlatform(source: Project, @Internal val targetName: String) : ImportSourceConfig(source) {
+    data class SingleMultiPlatform(override val source: Project, @get:Input val targetName: String) : ImportSourceConfig() {
         override val dependencyTaskNames: List<String>
             get() = (source.extensions.findByType(KotlinMultiplatformExtension::class.java)
                 ?: error("Project ${source.path} is not a multiplatform Kotlin project, but multiplatform pluginExport used"))
@@ -81,7 +86,7 @@ sealed class ImportSourceConfig(@Input val source: Project) {
         override val inputDir: File = source.pluginExport(targetName)
     }
 
-    class Multiplatform(source: Project) : ImportSourceConfig(source) {
+    data class Multiplatform(override val source: Project) : ImportSourceConfig() {
         override val dependencyTaskNames
             get() =
                 (source.extensions.findByType(KotlinMultiplatformExtension::class.java)

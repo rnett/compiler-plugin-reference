@@ -1,6 +1,5 @@
 plugins {
     kotlin("multiplatform")
-    id("com.vanniktech.maven.publish")
     id("org.jetbrains.dokka")
 }
 

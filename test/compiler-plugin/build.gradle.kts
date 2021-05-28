@@ -14,7 +14,9 @@ dependencies {
 
 pluginImport {
     afterEvaluate {
-        import(project(":runtime"), "test.generation")
+        import(project(":runtime"), "test.generation") {
+            rename("test", "test2")
+        }
     }
 }
 

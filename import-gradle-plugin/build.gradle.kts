@@ -4,7 +4,6 @@ plugins {
     kotlin("kapt")
     id("com.gradle.plugin-publish")
     id("org.jetbrains.dokka")
-    id("com.vanniktech.maven.publish")
 }
 
 dependencies {

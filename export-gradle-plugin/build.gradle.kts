@@ -5,7 +5,6 @@ plugins {
     id("com.github.gmazzo.buildconfig")
     id("com.gradle.plugin-publish")
     id("org.jetbrains.dokka")
-    id("com.vanniktech.maven.publish")
 }
 
 dependencies {
