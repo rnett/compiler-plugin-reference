@@ -42,6 +42,8 @@ import org.jetbrains.kotlin.ir.util.constructedClassType
 import org.jetbrains.kotlin.ir.util.getAnnotation
 import org.jetbrains.kotlin.ir.util.hasAnnotation
 import org.jetbrains.kotlin.ir.util.hasDefaultValue
+import org.jetbrains.kotlin.ir.util.isEnumClass
+import org.jetbrains.kotlin.ir.util.isEnumEntry
 import org.jetbrains.kotlin.ir.util.isFunctionOrKFunction
 import org.jetbrains.kotlin.ir.util.isVararg
 import org.jetbrains.kotlin.ir.util.kotlinFqName
@@ -172,13 +174,20 @@ class PluginExporter(val context: IrPluginContext, val messageCollector: Message
         IrConstKind.Double -> ConstantValue.Double(value as Double)
     }
 
-    private fun IrClass.getDeclaration(): ExportDeclaration.Class =
-        ExportDeclaration.Class(
+    private fun IrClass.getDeclaration(): ExportDeclaration.Class {
+        val enumNames = if(isEnumClass){
+            this.declarations.filterIsInstance<IrClass>()
+                .filter { it.isEnumEntry }
+                .map { it.name.asString() }
+        } else null
+        return ExportDeclaration.Class(
             resolvedName,
             publicSignature,
             typeParameters.map { it.toTypeParameter() },
+            enumNames,
             displayName
         )
+    }
 
     private fun IrTypeAlias.getDeclaration(): ExportDeclaration.Typealias =
         ExportDeclaration.Typealias(

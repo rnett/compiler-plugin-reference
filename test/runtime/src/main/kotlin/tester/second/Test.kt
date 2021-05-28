@@ -2,6 +2,14 @@ package tester.second
 
 import com.rnett.plugin.export.annotations.PluginExport
 
+annotation class Test(val t: Int = 2, val s: String = testConst)
+
+@PluginExport
+enum class TestEnum{
+    One, Two, Three;
+    val testProp: String = "test"
+}
+
 @PluginExport
 const val testConst: String = "test"
 
