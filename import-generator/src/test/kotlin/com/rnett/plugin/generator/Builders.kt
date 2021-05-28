@@ -50,7 +50,20 @@ interface NamespaceBuilder {
     fun childName(name: String): ResolvedName
 
     fun Property(name: String) =
-        Declaration(ExportDeclaration.Property(childName(name), Signature.None, TypeString.None, null, emptyList(), emptyList(), false, false, false, null))
+        Declaration(
+            ExportDeclaration.Property(
+                childName(name),
+                Signature.None,
+                TypeString.None,
+                null,
+                emptyList(),
+                emptyList(),
+                false,
+                false,
+                false,
+                null
+            )
+        )
 
     fun Function(name: String) =
         Declaration(ExportDeclaration.Function(childName(name), Signature.None, TypeString.None, null, emptyList(), emptyList(), emptyList()))
@@ -92,7 +105,7 @@ class ClassBuilder(val fqName: ResolvedName) : NamespaceBuilder {
 
     override fun childName(name: String): ResolvedName = fqName.child(name)
 
-    fun build() = DeclarationTree.Class(ExportDeclaration.Class(fqName, Signature.None, listOf(), null), declarations)
+    fun build() = DeclarationTree.Class(ExportDeclaration.Class(fqName, Signature.None, listOf(), null, null), declarations)
 
     fun Constructor(name: String = "<init>") =
         Declaration(ExportDeclaration.Constructor(childName(name), Signature.None, TypeString.None, emptyList(), emptyList()))

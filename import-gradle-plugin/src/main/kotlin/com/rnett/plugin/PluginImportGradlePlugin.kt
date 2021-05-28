@@ -12,6 +12,7 @@ class PluginImportGradlePlugin : Plugin<Project> {
                 group = "build"
                 className.set("Names")
                 target.afterEvaluate {
+                    //TODO make multiplatform
                     target.tasks.findByName("compileKotlin")!!.dependsOn(this)
                 }
             }

@@ -2,6 +2,7 @@ package com.rnett.plugin
 
 import org.jetbrains.kotlin.backend.common.IrElementTransformerVoidWithContext
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
+import org.jetbrains.kotlin.builtins.PrimitiveType
 import org.jetbrains.kotlin.cli.common.messages.CompilerMessageLocationWithRange
 import org.jetbrains.kotlin.cli.common.messages.CompilerMessageSeverity
 import org.jetbrains.kotlin.cli.common.messages.CompilerMessageSourceLocation
@@ -19,6 +20,7 @@ import org.jetbrains.kotlin.ir.declarations.IrDeclaration
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationBase
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationParent
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationWithVisibility
+import org.jetbrains.kotlin.ir.declarations.IrEnumEntry
 import org.jetbrains.kotlin.ir.declarations.IrProperty
 import org.jetbrains.kotlin.ir.declarations.IrSimpleFunction
 import org.jetbrains.kotlin.ir.declarations.IrTypeAlias
@@ -26,8 +28,13 @@ import org.jetbrains.kotlin.ir.declarations.IrTypeParameter
 import org.jetbrains.kotlin.ir.declarations.IrValueParameter
 import org.jetbrains.kotlin.ir.declarations.path
 import org.jetbrains.kotlin.ir.descriptors.toIrBasedDescriptor
+import org.jetbrains.kotlin.ir.expressions.IrClassReference
 import org.jetbrains.kotlin.ir.expressions.IrConst
 import org.jetbrains.kotlin.ir.expressions.IrConstKind
+import org.jetbrains.kotlin.ir.expressions.IrConstructorCall
+import org.jetbrains.kotlin.ir.expressions.IrExpression
+import org.jetbrains.kotlin.ir.expressions.IrGetEnumValue
+import org.jetbrains.kotlin.ir.expressions.IrVararg
 import org.jetbrains.kotlin.ir.symbols.IrClassSymbol
 import org.jetbrains.kotlin.ir.symbols.IrScriptSymbol
 import org.jetbrains.kotlin.ir.symbols.IrTypeParameterSymbol
@@ -35,18 +42,29 @@ import org.jetbrains.kotlin.ir.types.IrDynamicType
 import org.jetbrains.kotlin.ir.types.IrErrorType
 import org.jetbrains.kotlin.ir.types.IrSimpleType
 import org.jetbrains.kotlin.ir.types.IrType
+import org.jetbrains.kotlin.ir.types.classFqName
+import org.jetbrains.kotlin.ir.types.classOrNull
+import org.jetbrains.kotlin.ir.types.getArrayElementType
+import org.jetbrains.kotlin.ir.types.getPrimitiveType
+import org.jetbrains.kotlin.ir.types.isArray
+import org.jetbrains.kotlin.ir.types.isKClass
 import org.jetbrains.kotlin.ir.types.isNullableAny
+import org.jetbrains.kotlin.ir.types.isPrimitiveType
+import org.jetbrains.kotlin.ir.types.isString
 import org.jetbrains.kotlin.ir.util.IdSignature
 import org.jetbrains.kotlin.ir.util.constructedClass
 import org.jetbrains.kotlin.ir.util.constructedClassType
+import org.jetbrains.kotlin.ir.util.dumpKotlinLike
 import org.jetbrains.kotlin.ir.util.getAnnotation
 import org.jetbrains.kotlin.ir.util.hasAnnotation
 import org.jetbrains.kotlin.ir.util.hasDefaultValue
+import org.jetbrains.kotlin.ir.util.isAnnotationClass
 import org.jetbrains.kotlin.ir.util.isEnumClass
-import org.jetbrains.kotlin.ir.util.isEnumEntry
 import org.jetbrains.kotlin.ir.util.isFunctionOrKFunction
+import org.jetbrains.kotlin.ir.util.isPrimitiveArray
 import org.jetbrains.kotlin.ir.util.isVararg
 import org.jetbrains.kotlin.ir.util.kotlinFqName
+import org.jetbrains.kotlin.ir.util.primaryConstructor
 import org.jetbrains.kotlin.ir.util.render
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.types.KotlinType
@@ -174,17 +192,83 @@ class PluginExporter(val context: IrPluginContext, val messageCollector: Message
         IrConstKind.Double -> ConstantValue.Double(value as Double)
     }
 
+    private fun IrType.annotationValueKind(): AnnotationArgument.Kind = when {
+        isPrimitiveType() -> AnnotationArgument.Kind.Constant(
+            when (getPrimitiveType()!!) {
+                PrimitiveType.BOOLEAN -> ConstantValue.Kind.Boolean
+                PrimitiveType.CHAR -> ConstantValue.Kind.Char
+                PrimitiveType.BYTE -> ConstantValue.Kind.Byte
+                PrimitiveType.SHORT -> ConstantValue.Kind.Short
+                PrimitiveType.INT -> ConstantValue.Kind.Int
+                PrimitiveType.FLOAT -> ConstantValue.Kind.Float
+                PrimitiveType.LONG -> ConstantValue.Kind.Long
+                PrimitiveType.DOUBLE -> ConstantValue.Kind.Double
+            }
+        )
+        isString() -> AnnotationArgument.Kind.Constant(ConstantValue.Kind.String)
+        isKClass() -> AnnotationArgument.Kind.ClassRef
+        classOrNull?.owner?.isEnumClass == true -> AnnotationArgument.Kind.Enum
+        classOrNull?.owner?.isAnnotationClass == true -> if (classOrNull!!.owner.shouldExport())
+            AnnotationArgument.Kind.ExportedAnnotation(classFqName!!.toResolvedName())
+        else
+            AnnotationArgument.Kind.OpaqueAnnotation(classFqName!!.toResolvedName())
+        isArray() -> AnnotationArgument.Kind.Array(getArrayElementType(context.irBuiltIns).annotationValueKind())
+        isPrimitiveArray() -> AnnotationArgument.Kind.Array(getArrayElementType(context.irBuiltIns).annotationValueKind())
+        else -> error("Unknown array type ${render()}")
+    }
+
+    private fun IrExpression.toAnnotationArgument(): AnnotationArgument = when (this) {
+        is IrConst<*> -> AnnotationArgument.Constant(toConstValue())
+        is IrClassReference -> AnnotationArgument.ClassRef(classType.classFqName!!.toResolvedName())
+        is IrGetEnumValue -> AnnotationArgument.Enum(type.classFqName!!.toResolvedName(), symbol.owner.name.asString())
+        is IrConstructorCall -> {
+            val klass = this.symbol.owner.constructedClass
+            if (klass.isAnnotationClass) {
+                val klassFqn = klass.resolvedName
+
+                val arguments = symbol.owner.valueParameters.associate {
+                    it.name.asString() to getValueArgument(it.index)
+                }
+                    .filterValues { it != null }
+                    .mapValues { it.value!!.toAnnotationArgument() }
+
+                if (klass.shouldExport())
+                    AnnotationArgument.ExportedAnnotation(klassFqn, arguments)
+                else
+                    AnnotationArgument.OpaqueAnnotation(klassFqn, arguments)
+            } else {
+                error("Unknown annotation argument ${dumpKotlinLike()}")
+            }
+        }
+        is IrVararg -> AnnotationArgument.Array(elements.map {
+            if (it is IrExpression)
+                it.toAnnotationArgument()
+            else
+                error("Unsupported spread operator in annotation value")
+        }, varargElementType.annotationValueKind())
+        else -> error("Unknown annotation argument ${dumpKotlinLike()}")
+    }
+
     private fun IrClass.getDeclaration(): ExportDeclaration.Class {
-        val enumNames = if(isEnumClass){
-            this.declarations.filterIsInstance<IrClass>()
-                .filter { it.isEnumEntry }
+        val enumNames = if (isEnumClass) {
+            this.declarations.filterIsInstance<IrEnumEntry>()
                 .map { it.name.asString() }
         } else null
+
+        val annotationParams = if (isAnnotationClass) {
+            val constructor = primaryConstructor!!
+            constructor.valueParameters.associate {
+                val defaultValue = it.defaultValue?.expression
+                it.name.asString() to defaultValue?.toAnnotationArgument()
+            }
+        } else null
+
         return ExportDeclaration.Class(
             resolvedName,
             publicSignature,
             typeParameters.map { it.toTypeParameter() },
             enumNames,
+            annotationParams,
             displayName
         )
     }

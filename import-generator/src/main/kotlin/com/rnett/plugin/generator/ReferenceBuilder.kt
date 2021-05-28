@@ -42,6 +42,7 @@ internal object ReferenceBuilder {
         }
 
         val declaration = declarationTree.declaration
+
         if (declaration is ExportDeclaration.Property && declaration.constantValue != null) {
             val value = declaration.constantValue!!
             val type = when (value) {

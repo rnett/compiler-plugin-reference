@@ -6,5 +6,5 @@ plugins {
 }
 
 dependencies {
-    implementation("org.jetbrains.kotlin:kotlin-compiler-embeddable:1.5.0")
+    implementation("org.jetbrains.kotlin:kotlin-compiler-embeddable:1.5.10")
 }

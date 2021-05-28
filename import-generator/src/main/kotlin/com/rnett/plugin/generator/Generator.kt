@@ -34,20 +34,22 @@ object PluginImportGenerator {
             addComment("GENERATED, DO NOT EDIT")
             indent("    ")
 
+            val rootClass = ClassName(packageName, className)
             val tree = DeclarationTree(declarations)
-            addType(generate(ClassName(packageName, className), tree))
+            val lookup = FqNameLookup(tree, rootClass)
+            addType(generate(rootClass, tree, lookup))
 
         }.build().writeTo(baseDirectory)
     }
 
-    fun generate(fqName: ClassName, declarationTree: DeclarationTree): TypeSpec {
+    private fun generate(fqName: ClassName, declarationTree: DeclarationTree, lookup: FqNameLookup): TypeSpec {
         val builder = TypeSpec.classBuilder(fqName.simpleNames.last())
 
         val namesBuilder = ReferenceBuilder.referenceObject(declarationTree, fqName).toBuilder()
-        ResolvedBuilder.build(builder, namesBuilder, fqName, declarationTree)
+        ResolvedBuilder.build(builder, namesBuilder, fqName, lookup, declarationTree)
 
         declarationTree.children.forEach {
-            builder.addType(generate(fqName.nestedClass(it.displayName), it))
+            builder.addType(generate(fqName.nestedClass(it.displayName), it, lookup))
         }
 
         builder.addType(namesBuilder.build())

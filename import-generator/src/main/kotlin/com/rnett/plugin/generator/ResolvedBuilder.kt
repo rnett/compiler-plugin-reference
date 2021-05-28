@@ -14,14 +14,20 @@ import com.squareup.kotlinpoet.TypeSpec
 import com.squareup.kotlinpoet.asTypeName
 
 internal object ResolvedBuilder {
-    fun build(builder: TypeSpec.Builder, namesBuilder: TypeSpec.Builder, current: ClassName, declarationTree: DeclarationTree) {
+    fun build(
+        builder: TypeSpec.Builder,
+        namesBuilder: TypeSpec.Builder,
+        current: ClassName,
+        nameLookup: FqNameLookup,
+        declarationTree: DeclarationTree
+    ) {
         builder.addContextProperty()
 
         if (declarationTree is DeclarationTree.Package) {
             builder.addContextConstructor()
         } // added in build otherwise
 
-        declarationTree.declaration?.let { builder.build(it, namesBuilder, current) }
+        declarationTree.declaration?.let { builder.build(it, namesBuilder, current, nameLookup) }
 
         declarationTree.children.forEach {
             val type = current.nestedClass(it.displayName)
@@ -34,7 +40,7 @@ internal object ResolvedBuilder {
         }
     }
 
-    private fun TypeSpec.Builder.build(declaration: ExportDeclaration, namesBuilder: TypeSpec.Builder, current: ClassName) {
+    private fun TypeSpec.Builder.build(declaration: ExportDeclaration, namesBuilder: TypeSpec.Builder, current: ClassName, nameLookup: FqNameLookup) {
         val kdoc = CodeBlock.builder()
         kdoc.addStatement("Resolved reference to `${declaration.fqName.fqName}`")
         kdoc.add("\n")
@@ -66,7 +72,7 @@ internal object ResolvedBuilder {
         declaration.buildTypeConstructor(this, kdoc)
 
         when (declaration) {
-            is ExportDeclaration.Class -> declaration.buildClass(this, kdoc)
+            is ExportDeclaration.Class -> declaration.buildClass(this, nameLookup, kdoc)
             is ExportDeclaration.Constructor -> declaration.buildConstructor(this, kdoc)
             is ExportDeclaration.Function -> declaration.buildFunction(this, kdoc)
             is ExportDeclaration.Property -> declaration.buildProperty(this, kdoc)
@@ -164,8 +170,42 @@ internal object ResolvedBuilder {
     private fun ExportDeclaration.Typealias.buildTypealias(builder: TypeSpec.Builder, kdoc: CodeBlock.Builder) {
     }
 
-    private fun ExportDeclaration.Class.buildClass(builder: TypeSpec.Builder, kdoc: CodeBlock.Builder) {
+    private fun ExportDeclaration.Class.buildClass(builder: TypeSpec.Builder, nameLookup: FqNameLookup, kdoc: CodeBlock.Builder) {
+        if (enumNames != null) {
+            kdoc.addListBlock("Enum entries", enumNames!!) {
+                "[$it]"
+            }
+            enumNames!!.forEachIndexed { ord, it ->
+                builder.addProperty(
+                    PropertySpec.builder(it, References.ResolvedEnumEntry)
+                        .initializer(
+                            CodeBlock.builder().apply {
+                                add("%T($ord, ", References.ResolvedEnumEntry)
+                                beginControlFlow("owner.declarations.filterIsInstance<%T>().single", References.IrEnumEntry)
+                                add("it.name.asString() == %S", it)
+                                endControlFlow()
+                                add(".symbol,  ")
+                                add("fqName.child(%T.identifier(%S)))", References.Name, it)
+                            }.build()
+                        )
+                        .build()
+                )
+            }
+        }
 
+        if (annotationProperties != null) {
+            annotationProperties!!.forEach { (name, defaultValue) ->
+                if (defaultValue != null) {
+//                    builder.addProperty(
+//                        PropertySpec.builder(
+//                            "default" + name.capitalize(),
+//                            defaultValue.kind.valueType { nameLookup.getClassNameForFqName(it) })
+//                            .initializer(defaultValue.value())
+//                            .build()
+//                    )
+                }
+            }
+        }
     }
 
     private fun ExportDeclaration.Constructor.buildConstructor(builder: TypeSpec.Builder, kdoc: CodeBlock.Builder) {

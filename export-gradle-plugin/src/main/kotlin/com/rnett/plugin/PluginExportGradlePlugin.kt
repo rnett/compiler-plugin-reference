@@ -14,10 +14,20 @@ class PluginExportGradlePlugin : KotlinCompilerPluginSupportPlugin {
     }
 
     override fun applyToCompilation(kotlinCompilation: KotlinCompilation<*>): Provider<List<SubpluginOption>> {
-        val project = kotlinCompilation.target.project
+        val target = kotlinCompilation.target
+        val project = target.project
+
+        val basePath = project.buildDir.resolve("pluginExport")
+        val exportDir = basePath.resolve(target.name).resolve(kotlinCompilation.name)
+
+        project.tasks.getByName(kotlinCompilation.compileKotlinTaskName) {
+            it.outputs.dir(exportDir)
+                .withPropertyName("pluginExportDir")
+        }
+
         return project.provider {
             listOf(
-                SubpluginOption("outputDir", project.buildDir.resolve("pluginExport").absolutePath)
+                SubpluginOption("outputDir", exportDir.absolutePath)
             )
         }
     }

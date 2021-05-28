@@ -1,14 +1,33 @@
 package tester.second
 
 import com.rnett.plugin.export.annotations.PluginExport
-
-annotation class Test(val t: Int = 2, val s: String = testConst)
+import kotlin.reflect.KClass
 
 @PluginExport
-enum class TestEnum{
+annotation class TestAnnotation(
+    val t: Int = 2,
+    val s: String = testConst,
+    val e: TestEnum = TestEnum.Two,
+    val c: KClass<*> = TestClass::class,
+    val r: ExportedAnnotation = ExportedAnnotation(2),
+    val n: NonExported = NonExported("test"),
+    val a: IntArray = [1, 2, 3],
+)
+
+@PluginExport
+annotation class ExportedAnnotation(val i: Int)
+
+annotation class NonExported(val s: String)
+
+@PluginExport
+enum class TestEnum {
     One, Two, Three;
+
     val testProp: String = "test"
 }
+
+@PluginExport
+fun testIsOne(t: TestEnum) = t == TestEnum.One
 
 @PluginExport
 const val testConst: String = "test"

@@ -7,9 +7,9 @@ plugins {
 }
 
 dependencies {
-    implementation("org.jetbrains.kotlin:kotlin-gradle-plugin-api:1.5.0")
+    implementation("org.jetbrains.kotlin:kotlin-gradle-plugin-api:1.5.10")
 
-    compileOnly("org.jetbrains.kotlin:kotlin-gradle-plugin:1.5.0")
+    compileOnly("org.jetbrains.kotlin:kotlin-gradle-plugin:1.5.10")
 
     compileOnly("com.google.auto.service:auto-service-annotations:1.0-rc6")
     kapt("com.google.auto.service:auto-service:1.0-rc6")

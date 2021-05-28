@@ -10,8 +10,8 @@ import org.jetbrains.kotlin.compiler.plugin.AbstractCliOption
 import org.jetbrains.kotlin.compiler.plugin.CommandLineProcessor
 import org.jetbrains.kotlin.compiler.plugin.ComponentRegistrar
 import org.jetbrains.kotlin.config.CompilerConfiguration
-import org.jetbrains.kotlin.ir.builders.IrBuilderWithScope
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
+import test.generation.Names
 
 @AutoService(CommandLineProcessor::class)
 class PluginExportCommandLineProcessor : CommandLineProcessor {
@@ -34,17 +34,10 @@ class PluginExportComponentRegistrar : ComponentRegistrar {
     }
 }
 
-fun IrBuilderWithScope.test() {
-//    irCallConstructor(null as IrFunctionSymbol).apply {
-//        irVararg()
-//    }
-}
-
 class PluginExportIrGenerationExtension(val messageCollector: MessageCollector) : IrGenerationExtension {
     override fun generate(moduleFragment: IrModuleFragment, pluginContext: IrPluginContext) {
-        //TODO use pluginContext.referenceTopLevel()
         with(pluginContext) {
-
+            val names = Names(this)
             println()
         }
     }

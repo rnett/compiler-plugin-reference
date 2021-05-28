@@ -1,9 +1,25 @@
 package com.rnett.plugin.generator
 
+import com.rnett.plugin.AnnotationArgument
+import com.rnett.plugin.ConstantValue
 import com.rnett.plugin.ExportDeclaration
 import com.rnett.plugin.ResolvedName
 import com.rnett.plugin.Signature
+import com.squareup.kotlinpoet.BOOLEAN
+import com.squareup.kotlinpoet.BYTE
+import com.squareup.kotlinpoet.CHAR
+import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.CodeBlock
+import com.squareup.kotlinpoet.DOUBLE
+import com.squareup.kotlinpoet.FLOAT
+import com.squareup.kotlinpoet.INT
+import com.squareup.kotlinpoet.LONG
+import com.squareup.kotlinpoet.NOTHING
+import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
+import com.squareup.kotlinpoet.SHORT
+import com.squareup.kotlinpoet.STRING
+import com.squareup.kotlinpoet.TypeName
+import com.squareup.kotlinpoet.asClassName
 
 internal fun ResolvedName.toFqName(): CodeBlock = CodeBlock.of("%T(%S)", References.FqName, this.fqName)
 
@@ -71,4 +87,40 @@ internal fun ExportDeclaration.Param.callKdoc() = buildString {
     if (optional)
         append(" = ...")
     append("`")
+}
+
+internal val ConstantValue.Kind.valueType: TypeName
+    get() = when (this) {
+        is ConstantValue.Kind.Boolean -> BOOLEAN
+        is ConstantValue.Kind.Byte -> BYTE
+        is ConstantValue.Kind.Char -> CHAR
+        is ConstantValue.Kind.Double -> DOUBLE
+        is ConstantValue.Kind.Float -> FLOAT
+        is ConstantValue.Kind.Int -> INT
+        is ConstantValue.Kind.Long -> LONG
+        is ConstantValue.Kind.Null -> NOTHING.copy(nullable = true)
+        is ConstantValue.Kind.Short -> SHORT
+        is ConstantValue.Kind.String -> STRING
+    }
+
+internal fun AnnotationArgument.Kind.valueType(classNameForFqName: (ResolvedName) -> ClassName): TypeName = when (this) {
+    is AnnotationArgument.Kind.ExportedAnnotation -> classNameForFqName(this.fqName)
+    is AnnotationArgument.Kind.OpaqueAnnotation -> References.OpaqueAnnotationInstance
+    is AnnotationArgument.Kind.Array -> List::class.asClassName().parameterizedBy(elementKind.valueType(classNameForFqName))
+    is AnnotationArgument.Kind.ClassRef -> References.IrClassSymbol
+    is AnnotationArgument.Kind.Constant -> this.valueKind.valueType
+    is AnnotationArgument.Kind.Enum -> References.IrEnumEntrySymbol
+}
+
+/**
+ * Requires `context` in scope?
+ * TODO implement
+ */
+internal fun AnnotationArgument.value(): CodeBlock = when (this) {
+    is AnnotationArgument.Array -> TODO()
+    is AnnotationArgument.ClassRef -> TODO()
+    is AnnotationArgument.Constant -> TODO()
+    is AnnotationArgument.Enum -> TODO()
+    is AnnotationArgument.ExportedAnnotation -> TODO()
+    is AnnotationArgument.OpaqueAnnotation -> TODO()
 }

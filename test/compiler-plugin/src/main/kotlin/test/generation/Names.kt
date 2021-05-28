@@ -7,6 +7,7 @@ import com.rnett.plugin.FunctionReference
 import com.rnett.plugin.PropertyReference
 import com.rnett.plugin.ResolvedClass
 import com.rnett.plugin.ResolvedConstructor
+import com.rnett.plugin.ResolvedEnumEntry
 import com.rnett.plugin.ResolvedFunction
 import com.rnett.plugin.ResolvedProperty
 import com.rnett.plugin.ResolvedTypealias
@@ -16,6 +17,7 @@ import org.jetbrains.kotlin.ir.builders.IrBuilderWithScope
 import org.jetbrains.kotlin.ir.builders.irCall
 import org.jetbrains.kotlin.ir.builders.irCallConstructor
 import org.jetbrains.kotlin.ir.builders.irVararg
+import org.jetbrains.kotlin.ir.declarations.IrEnumEntry
 import org.jetbrains.kotlin.ir.declarations.IrProperty
 import org.jetbrains.kotlin.ir.expressions.IrCall
 import org.jetbrains.kotlin.ir.expressions.IrConstructorCall
@@ -40,6 +42,7 @@ import org.jetbrains.kotlin.ir.util.isSetter
 import org.jetbrains.kotlin.ir.util.substitute
 import org.jetbrains.kotlin.ir.util.typeSubstitutionMap
 import org.jetbrains.kotlin.name.FqName
+import org.jetbrains.kotlin.name.Name
 
 public class Names(
     private val _context: IrPluginContext
@@ -54,7 +57,13 @@ public class Names(
         public class second(
             private val _context: IrPluginContext
         ) {
+            public fun ExportedAnnotation(): ExportedAnnotation = ExportedAnnotation(_context)
+
+            public fun TestAnnotation(): TestAnnotation = TestAnnotation(_context)
+
             public fun TestClass(): TestClass = TestClass(_context)
+
+            public fun TestEnum(): TestEnum = TestEnum(_context)
 
             public fun TestTypealias(): TestTypealias = TestTypealias(_context)
 
@@ -64,6 +73,8 @@ public class Names(
 
             public fun testConst(): testConst = testConst(_context)
 
+            public fun testIsOne(): testIsOne = testIsOne(_context)
+
             public fun testPropWithTypeVar(): testPropWithTypeVar = testPropWithTypeVar(_context)
 
             public fun testPublishedApi(): testPublishedApi = testPublishedApi(_context)
@@ -71,6 +82,63 @@ public class Names(
             public fun testPublishedApi_1(): testPublishedApi_1 = testPublishedApi_1(_context)
 
             public fun testTopLevelFunction(): testTopLevelFunction = testTopLevelFunction(_context)
+
+            /**
+             * Resolved reference to `tester.second.ExportedAnnotation`
+             *
+             */
+            public class ExportedAnnotation private constructor(
+                private val _context: IrPluginContext,
+                symbol: IrClassSymbol
+            ) : ResolvedClass(symbol, fqName) {
+                /**
+                 * Get the class's type.
+                 */
+                public val type: IrSimpleType = owner.typeWith()
+
+                public constructor(context: IrPluginContext) : this(context, resolveSymbol(context))
+
+                public companion object Reference :
+                    ClassReference<ExportedAnnotation>(
+                        FqName("tester.second.ExportedAnnotation"),
+                        IdSignature.PublicSignature("tester.second", "ExportedAnnotation", null, 0)
+                    ) {
+                    public override fun getResolvedReference(
+                        context: IrPluginContext,
+                        symbol: IrClassSymbol
+                    ): ExportedAnnotation = ExportedAnnotation(
+                        context,
+                        symbol
+                    )
+                }
+            }
+
+            /**
+             * Resolved reference to `tester.second.TestAnnotation`
+             *
+             */
+            public class TestAnnotation private constructor(
+                private val _context: IrPluginContext,
+                symbol: IrClassSymbol
+            ) : ResolvedClass(symbol, fqName) {
+                /**
+                 * Get the class's type.
+                 */
+                public val type: IrSimpleType = owner.typeWith()
+
+                public constructor(context: IrPluginContext) : this(context, resolveSymbol(context))
+
+                public companion object Reference :
+                    ClassReference<TestAnnotation>(
+                        FqName("tester.second.TestAnnotation"),
+                        IdSignature.PublicSignature("tester.second", "TestAnnotation", null, 0)
+                    ) {
+                    public override fun getResolvedReference(
+                        context: IrPluginContext,
+                        symbol: IrClassSymbol
+                    ): TestAnnotation = TestAnnotation(context, symbol)
+                }
+            }
 
             /**
              * Resolved reference to `tester.second.TestClass`
@@ -465,6 +533,56 @@ public class Names(
             }
 
             /**
+             * Resolved reference to `tester.second.TestEnum`
+             *
+             * Enum entries
+             * * [One]
+             * * [Two]
+             * * [Three]
+             *
+             */
+            public class TestEnum private constructor(
+                private val _context: IrPluginContext,
+                symbol: IrClassSymbol
+            ) : ResolvedClass(symbol, fqName) {
+                /**
+                 * Get the class's type.
+                 */
+                public val type: IrSimpleType = owner.typeWith()
+
+                public val One: ResolvedEnumEntry = ResolvedEnumEntry(0,
+                    owner.declarations.filterIsInstance<IrEnumEntry>().single {
+                        it.name.asString() == "One"
+                    }
+                        .symbol, fqName.child(Name.identifier("One")))
+
+                public val Two: ResolvedEnumEntry = ResolvedEnumEntry(1,
+                    owner.declarations.filterIsInstance<IrEnumEntry>().single {
+                        it.name.asString() == "Two"
+                    }
+                        .symbol, fqName.child(Name.identifier("Two")))
+
+                public val Three: ResolvedEnumEntry = ResolvedEnumEntry(2,
+                    owner.declarations.filterIsInstance<IrEnumEntry>().single {
+                        it.name.asString() == "Three"
+                    }
+                        .symbol, fqName.child(Name.identifier("Three")))
+
+                public constructor(context: IrPluginContext) : this(context, resolveSymbol(context))
+
+                public companion object Reference :
+                    ClassReference<TestEnum>(
+                        FqName("tester.second.TestEnum"),
+                        IdSignature.PublicSignature("tester.second", "TestEnum", null, 0)
+                    ) {
+                    public override fun getResolvedReference(
+                        context: IrPluginContext,
+                        symbol: IrClassSymbol
+                    ): TestEnum = TestEnum(context, symbol)
+                }
+            }
+
+            /**
              * Resolved reference to `tester.second.TestTypealias`
              *
              */
@@ -768,6 +886,78 @@ public class Names(
                             testConst.signature && call.symbol.owner.isGetter
                         ) {
                             return GetterInstance(call)
+                        } else {
+                            return null
+                        }
+                    }
+                }
+            }
+
+            /**
+             * Resolved reference to `tester.second.testIsOne`
+             *
+             * Value parameters:
+             * * `t: tester.second.TestEnum`
+             *
+             * Return type: `kotlin.Boolean`
+             */
+            public class testIsOne private constructor(
+                private val _context: IrPluginContext,
+                symbol: IrSimpleFunctionSymbol
+            ) : ResolvedFunction(symbol, fqName) {
+                /**
+                 * Get the return type.
+                 */
+                public val returnType: IrType = owner.returnType
+
+                public constructor(context: IrPluginContext) : this(context, resolveSymbol(context))
+
+                /**
+                 * Call the function
+                 *
+                 * @param t `tester.second.TestEnum`
+                 * @return `kotlin.Boolean`
+                 */
+                public fun call(builder: IrBuilderWithScope, t: IrExpression): IrCall =
+                    builder.irCall(this).apply {
+                        type = owner.returnType
+                        putValueArgument(0, t)
+                    }
+
+
+                public class Instance(
+                    public val call: IrCall
+                ) {
+                    init {
+                        val signature = call.symbol.signature
+                        val requiredSignature = testIsOne.signature
+                        require(signature == requiredSignature) {
+                            """Instance's signature $signature did not match the required signature of $requiredSignature"""
+                        }
+                    }
+
+                    public val t: IrExpression?
+                        get() = call.getValueArgument(0)
+                }
+
+                public companion object Reference :
+                    FunctionReference<testIsOne>(
+                        FqName("tester.second.testIsOne"),
+                        IdSignature.PublicSignature(
+                            "tester.second",
+                            "testIsOne", -4448082258041760847, 0
+                        )
+                    ) {
+                    public override fun getResolvedReference(
+                        context: IrPluginContext,
+                        symbol: IrSimpleFunctionSymbol
+                    ): testIsOne = testIsOne(context, symbol)
+
+                    public fun instance(call: IrCall): Instance = Instance(call)
+
+                    public fun instanceOrNull(call: IrCall): Instance? {
+                        if (call.symbol.signature == testIsOne.signature) {
+                            return Instance(call)
                         } else {
                             return null
                         }
@@ -1179,7 +1369,15 @@ public class Names(
             }
 
             public companion object Reference {
+                public val ExportedAnnotation: ExportedAnnotation.Reference =
+                    second.ExportedAnnotation.Reference
+
+                public val TestAnnotation: TestAnnotation.Reference =
+                    second.TestAnnotation.Reference
+
                 public val TestClass: TestClass.Reference = second.TestClass.Reference
+
+                public val TestEnum: TestEnum.Reference = second.TestEnum.Reference
 
                 public val TestTypealias: TestTypealias.Reference = second.TestTypealias.Reference
 
@@ -1190,6 +1388,8 @@ public class Names(
                     second.WithTypeParams.Reference
 
                 public val testConst: testConst.Reference = second.testConst.Reference
+
+                public val testIsOne: testIsOne.Reference = second.testIsOne.Reference
 
                 public val testPropWithTypeVar: testPropWithTypeVar.Reference =
                     second.testPropWithTypeVar.Reference

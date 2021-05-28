@@ -20,6 +20,8 @@
       <module name="test.plugin" target="15" />
       <module name="test.plugin.main" target="15" />
       <module name="test.plugin.test" target="15" />
+      <module name="test.runtime.main" target="15" />
+      <module name="test.runtime.test" target="15" />
       <module name="test.test" target="15" />
     </bytecodeTargetLevel>
   </component>

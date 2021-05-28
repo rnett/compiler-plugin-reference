@@ -1,9 +1,24 @@
 plugins {
-    kotlin("jvm")
+    kotlin("multiplatform")
     id("com.rnett.compiler-plugin-referenceer")
 }
 
-dependencies {
-    implementation("com.rnett.compiler-plugin-reference:export")
+kotlin {
+    jvm()
+    js(IR) {
+        nodejs()
+    }
+    sourceSets {
+        val commonMain by getting {
+
+        }
+        val jvmMain by getting {
+
+        }
+    }
 }
+
+//dependencies {
+//    implementation("com.rnett.compiler-plugin-reference:export")
+//}
 

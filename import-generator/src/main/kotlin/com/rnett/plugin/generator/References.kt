@@ -17,9 +17,13 @@ object References {
     val ResolvedConstructor = ClassName.bestGuess("com.rnett.plugin.ResolvedConstructor")
     val ResolvedFunction = ClassName.bestGuess("com.rnett.plugin.ResolvedFunction")
     val ResolvedProperty = ClassName.bestGuess("com.rnett.plugin.ResolvedProperty")
+    val ResolvedEnumEntry = ClassName.bestGuess("com.rnett.plugin.ResolvedEnumEntry")
+
+    val OpaqueAnnotationInstance = ClassName.bestGuess("com.rnett.plugin.OpaqueAnnotationInstance")
 
     val String = STRING
 
+    val Name = ClassName.bestGuess("org.jetbrains.kotlin.name.Name")
     val FqName = ClassName.bestGuess("org.jetbrains.kotlin.name.FqName")
     val IdSignaturePublicSignature = ClassName.bestGuess("org.jetbrains.kotlin.ir.util.IdSignature.PublicSignature")
     val IrPluginContext = ClassName.bestGuess("org.jetbrains.kotlin.backend.common.extensions.IrPluginContext")
@@ -32,6 +36,7 @@ object References {
     val IrTypeAliasSymbol = ClassName.bestGuess("org.jetbrains.kotlin.ir.symbols.IrTypeAliasSymbol")
     val IrPropertySymbol = ClassName.bestGuess("org.jetbrains.kotlin.ir.symbols.IrPropertySymbol")
     val IrConstructorSymbol = ClassName.bestGuess("org.jetbrains.kotlin.ir.symbols.IrConstructorSymbol")
+    val IrEnumEntrySymbol = ClassName.bestGuess("org.jetbrains.kotlin.ir.symbols.IrEnumEntrySymbol")
 
     val IrType = ClassName.bestGuess("org.jetbrains.kotlin.ir.types.IrType")
     val IrSimpleType = ClassName.bestGuess("org.jetbrains.kotlin.ir.types.IrSimpleType")
@@ -40,6 +45,7 @@ object References {
     val IrCall = ClassName.bestGuess("org.jetbrains.kotlin.ir.expressions.IrCall")
     val IrConstructorCall = ClassName.bestGuess("org.jetbrains.kotlin.ir.expressions.IrConstructorCall")
     val IrProperty = ClassName.bestGuess("org.jetbrains.kotlin.ir.declarations.IrProperty")
+    val IrEnumEntry = ClassName.bestGuess("org.jetbrains.kotlin.ir.declarations.IrEnumEntry")
 
     val IrStarProjectionImpl = ClassName.bestGuess("org.jetbrains.kotlin.ir.types.impl.IrStarProjectionImpl")
 
