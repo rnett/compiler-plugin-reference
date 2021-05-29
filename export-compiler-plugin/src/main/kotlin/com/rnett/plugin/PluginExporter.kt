@@ -23,6 +23,7 @@ import org.jetbrains.kotlin.ir.declarations.IrDeclarationBase
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationParent
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationWithVisibility
 import org.jetbrains.kotlin.ir.declarations.IrEnumEntry
+import org.jetbrains.kotlin.ir.declarations.IrMemberWithContainerSource
 import org.jetbrains.kotlin.ir.declarations.IrProperty
 import org.jetbrains.kotlin.ir.declarations.IrSimpleFunction
 import org.jetbrains.kotlin.ir.declarations.IrTypeAlias
@@ -66,6 +67,7 @@ import org.jetbrains.kotlin.ir.util.isFunctionOrKFunction
 import org.jetbrains.kotlin.ir.util.isPrimitiveArray
 import org.jetbrains.kotlin.ir.util.isVararg
 import org.jetbrains.kotlin.ir.util.kotlinFqName
+import org.jetbrains.kotlin.ir.util.parentClassOrNull
 import org.jetbrains.kotlin.ir.util.primaryConstructor
 import org.jetbrains.kotlin.ir.util.render
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
@@ -90,6 +92,10 @@ class PluginExporter(val context: IrPluginContext, val messageCollector: Message
     private fun IrDeclarationWithVisibility.shouldExport(): Boolean {
         if (this.isActual) {
             return hasAnnotation(Names.PluginExport) && descriptor.findExpects().none { it.annotations.hasAnnotation(Names.PluginExport) }
+        }
+
+        if (this is IrMemberWithContainerSource && this.parentClassOrNull?.isAnnotationClass == true) {
+            return false
         }
 
         return hasAnnotation(Names.PluginExport)
