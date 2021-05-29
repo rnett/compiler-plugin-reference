@@ -1,25 +1,19 @@
 package com.rnett.plugin
 
-import org.jetbrains.kotlin.ir.builders.IrBuilderWithScope
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrConstructor
 import org.jetbrains.kotlin.ir.declarations.IrDeclaration
-import org.jetbrains.kotlin.ir.declarations.IrEnumEntry
 import org.jetbrains.kotlin.ir.declarations.IrProperty
 import org.jetbrains.kotlin.ir.declarations.IrSimpleFunction
 import org.jetbrains.kotlin.ir.declarations.IrTypeAlias
-import org.jetbrains.kotlin.ir.expressions.impl.IrGetEnumValueImpl
 import org.jetbrains.kotlin.ir.symbols.IrBindableSymbol
 import org.jetbrains.kotlin.ir.symbols.IrClassSymbol
 import org.jetbrains.kotlin.ir.symbols.IrConstructorSymbol
-import org.jetbrains.kotlin.ir.symbols.IrEnumEntrySymbol
 import org.jetbrains.kotlin.ir.symbols.IrPropertySymbol
 import org.jetbrains.kotlin.ir.symbols.IrSimpleFunctionSymbol
 import org.jetbrains.kotlin.ir.symbols.IrSymbol
 import org.jetbrains.kotlin.ir.symbols.IrTypeAliasSymbol
 import org.jetbrains.kotlin.ir.types.IrType
-import org.jetbrains.kotlin.ir.util.defaultType
-import org.jetbrains.kotlin.ir.util.parentAsClass
 import org.jetbrains.kotlin.name.FqName
 
 sealed class ResolvedReference<S : IrBindableSymbol<*, T>, T : IrDeclaration>(val symbol: S, val fqName: FqName) {
@@ -74,17 +68,5 @@ open class ResolvedProperty(symbol: IrPropertySymbol, fqName: FqName) :
 
     override fun toString(): String {
         return "ResolvedProperty(fqName=$fqName, symbol=$symbol)"
-    }
-}
-
-open class ResolvedEnumEntry(val ordinal: Int, symbol: IrEnumEntrySymbol, fqName: FqName) :
-    ResolvedReference<IrEnumEntrySymbol, IrEnumEntry>(symbol, fqName), IrEnumEntrySymbol by symbol {
-
-    fun get(builder: IrBuilderWithScope) = IrGetEnumValueImpl(builder.startOffset, builder.endOffset, symbol.owner.parentAsClass.defaultType, symbol)
-
-    val name: String = fqName.shortName().asString()
-
-    override fun toString(): String {
-        return "ResolvedEnumEntry(fqName=$fqName, symbol=$symbol)"
     }
 }

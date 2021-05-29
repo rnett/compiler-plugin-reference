@@ -72,7 +72,7 @@ internal object ResolvedBuilder {
         declaration.buildTypeConstructor(this, kdoc)
 
         when (declaration) {
-            is ExportDeclaration.Class -> declaration.buildClass(this, nameLookup, kdoc)
+            is ExportDeclaration.Class -> declaration.buildClass(this, kdoc, nameLookup, current)
             is ExportDeclaration.Constructor -> declaration.buildConstructor(this, kdoc)
             is ExportDeclaration.Function -> declaration.buildFunction(this, kdoc)
             is ExportDeclaration.Property -> declaration.buildProperty(this, kdoc)
@@ -86,7 +86,6 @@ internal object ResolvedBuilder {
         addTypes(types)
     }
 
-    //TODO call wrappers, i.e. to extract parameters.  Especially for annotations
     private fun ExportDeclaration.Property.buildProperty(builder: TypeSpec.Builder, kdoc: CodeBlock.Builder) {
         dispatchReceiver?.let {
             kdoc.addStatement("Dispatch receiver: %L", it.type.kdoc)
@@ -170,23 +169,17 @@ internal object ResolvedBuilder {
     private fun ExportDeclaration.Typealias.buildTypealias(builder: TypeSpec.Builder, kdoc: CodeBlock.Builder) {
     }
 
-    private fun ExportDeclaration.Class.buildClass(builder: TypeSpec.Builder, nameLookup: FqNameLookup, kdoc: CodeBlock.Builder) {
+    private fun ExportDeclaration.Class.buildClass(builder: TypeSpec.Builder, kdoc: CodeBlock.Builder, nameLookup: FqNameLookup, current: ClassName) {
         if (enumNames != null) {
-            kdoc.addListBlock("Enum entries", enumNames!!) {
-                "[$it]"
+            kdoc.addListBlock("Enum entries", enumNames!!.map { it.first }) {
+                "[Instance.$it]"
             }
-            enumNames!!.forEachIndexed { ord, it ->
+            val instanceClass = current.nestedClass("Instance")
+            enumNames!!.forEachIndexed { ord, (name, _) ->
                 builder.addProperty(
-                    PropertySpec.builder(it, References.ResolvedEnumEntry)
+                    PropertySpec.builder(name, References.ResolvedEnumEntry.parameterizedBy(instanceClass))
                         .initializer(
-                            CodeBlock.builder().apply {
-                                add("%T($ord, ", References.ResolvedEnumEntry)
-                                beginControlFlow("owner.declarations.filterIsInstance<%T>().single", References.IrEnumEntry)
-                                add("it.name.asString() == %S", it)
-                                endControlFlow()
-                                add(".symbol,  ")
-                                add("fqName.child(%T.identifier(%S)))", References.Name, it)
-                            }.build()
+                            CodeBlock.of("%T.%L.reference(_context)", instanceClass, name)
                         )
                         .build()
                 )

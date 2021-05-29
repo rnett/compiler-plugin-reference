@@ -68,7 +68,7 @@ sealed class ExportDeclaration {
         override val fqName: ResolvedName,
         override val signature: Signature,
         val typeParameters: List<TypeParameter>,
-        val enumNames: List<String>?,
+        val enumNames: List<Pair<String, Signature>>?,
         val annotationProperties: Map<String, AnnotationArgument?>?,
         override val customName: String? = null
     ) : ExportDeclaration()

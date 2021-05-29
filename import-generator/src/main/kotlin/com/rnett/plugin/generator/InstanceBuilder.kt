@@ -6,37 +6,37 @@ import com.squareup.kotlinpoet.CodeBlock
 import com.squareup.kotlinpoet.FunSpec
 import com.squareup.kotlinpoet.KModifier
 import com.squareup.kotlinpoet.MemberName
+import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import com.squareup.kotlinpoet.PropertySpec
 import com.squareup.kotlinpoet.TypeName
 import com.squareup.kotlinpoet.TypeSpec
+
+typealias TypeAndFuncs = Pair<TypeSpec, List<FunSpec>>?
 
 //TODO I would like to be able to get the Resolved classes from an instance.  Not possible b/c it requires context.
 //  But can I get rid of context property & use children filtering to find children
 object InstanceBuilder {
 
     const val name: String = "Instance"
+    fun instanceBuilder() = TypeSpec.classBuilder(name)
 
-    //TODO do one w/ class wrapping an expression, to get properties, methods, etc?  Might be too complicated, would just be calling w/ receivers
-    //     type as well?  i.e. raising + extracting type params
     fun buildInstance(className: ClassName, declaration: ExportDeclaration): Pair<List<TypeSpec>, List<FunSpec>> {
-        val builder = TypeSpec.classBuilder(name)
-
-        val builders = when (declaration) {
-            is ExportDeclaration.Class -> declaration.buildClassInstance(builder, className)
-            is ExportDeclaration.Constructor -> declaration.buildConstructorInstance(builder, className)
-            is ExportDeclaration.Function -> declaration.buildFunctionInstance(builder, className)
-            is ExportDeclaration.Property -> declaration.buildPropertyInstance(builder, className)
-            is ExportDeclaration.Typealias -> declaration.buildTypealiasInstance(builder, className)
-        }?.toMutableList() ?: return emptyList<TypeSpec>() to emptyList<FunSpec>()
+        val (type, functions) = when (declaration) {
+            is ExportDeclaration.Class -> declaration.buildClassInstance(className)
+            is ExportDeclaration.Constructor -> declaration.buildConstructorInstance(className)
+            is ExportDeclaration.Function -> declaration.buildFunctionInstance(className)
+            is ExportDeclaration.Property -> declaration.buildPropertyInstance(className)
+            is ExportDeclaration.Typealias -> declaration.buildTypealiasInstance(className)
+        }?.let { it.first to it.second.toMutableList() } ?: return emptyList<TypeSpec>() to emptyList<FunSpec>()
 
         if (declaration is ExportDeclaration.Property) {
-            builders += declaration.addAccessorInstanceGetters(className)
+            functions += declaration.addAccessorInstanceGetters(className)
         }
 
         if (declaration is ExportDeclaration.Property) {
-            return listOf(builder.build()) + declaration.additionalPropertyDeclarations(className.nestedClass(name)) to builders
+            return (listOf(type) + declaration.additionalPropertyDeclarations(className.nestedClass(name))) to functions
         } else
-            return listOf(builder.build()) to builders
+            return listOf(type) to functions
     }
 
     private fun TypeSpec.Builder.addSignatureCheck(signature: CodeBlock, className: ClassName) {
@@ -51,7 +51,45 @@ object InstanceBuilder {
         )
     }
 
-    private fun ExportDeclaration.Class.buildClassInstance(builder: TypeSpec.Builder, className: ClassName): List<FunSpec>? {
+    private fun ExportDeclaration.Class.buildClassInstance(className: ClassName): TypeAndFuncs {
+        enumNames?.let { enumNames ->
+            val instanceType = className.nestedClass("Instance")
+            val referenceType = References.EnumEntryReference.parameterizedBy(instanceType)
+            val instanceBuilder = TypeSpec.enumBuilder("Instance").apply {
+                addSuperinterface(References.EnumInstance)
+                primaryConstructor(
+                    FunSpec.constructorBuilder()
+                        .addParameter("reference", referenceType)
+                        .build()
+                )
+                addProperty(
+                    PropertySpec.builder("reference", referenceType)
+                        .initializer("reference")
+                        .build()
+                )
+
+                enumNames.forEach { (name, sig) ->
+                    addEnumConstant(
+                        name, TypeSpec.anonymousClassBuilder()
+                            .addSuperclassConstructorParameter(
+                                CodeBlock.builder()
+                                    .add("%T(", referenceType)
+                                    .add("%T.fqName, ", className)
+                                    .beginControlFlow("")
+                                    .add("%T.%L", instanceType, name)
+                                    .endControlFlow()
+                                    .add(", %L", sig.toIdSignature())
+                                    .add(")")
+                                    .build()
+                            )
+                            .build()
+                    )
+                }
+            }
+
+            return instanceBuilder.build() to emptyList()
+
+        }
         return null
     }
 
@@ -84,7 +122,8 @@ object InstanceBuilder {
         )
     }
 
-    private fun ExportDeclaration.Constructor.buildConstructorInstance(builder: TypeSpec.Builder, className: ClassName): List<FunSpec> {
+    private fun ExportDeclaration.Constructor.buildConstructorInstance(className: ClassName): TypeAndFuncs {
+        val builder = instanceBuilder()
 
         builder.primaryConstructor(FunSpec.constructorBuilder().addParameter("call", References.IrConstructorCall).build())
         builder.addProperty(PropertySpec.builder("call", References.IrConstructorCall).initializer("call").build())
@@ -95,10 +134,11 @@ object InstanceBuilder {
         builder.addTypeParameters(classTypeParams)
         builder.addValueParameters(valueParameters)
 
-        return builderMethods("instance", "call", References.IrConstructorCall, className, getSignature)
+        return builder.build() to builderMethods("instance", "call", References.IrConstructorCall, className, getSignature)
     }
 
-    private fun ExportDeclaration.Function.buildFunctionInstance(builder: TypeSpec.Builder, className: ClassName): List<FunSpec> {
+    private fun ExportDeclaration.Function.buildFunctionInstance(className: ClassName): TypeAndFuncs {
+        val builder = instanceBuilder()
 
         builder.primaryConstructor(FunSpec.constructorBuilder().addParameter("call", References.IrCall).build())
         builder.addProperty(PropertySpec.builder("call", References.IrCall).initializer("call").build())
@@ -110,10 +150,11 @@ object InstanceBuilder {
         builder.addValueParameters(valueParameters)
         builder.addReceivers(dispatchReceiver, extensionReceivers)
 
-        return builderMethods("instance", "call", References.IrCall, className, getSignature)
+        return builder.build() to builderMethods("instance", "call", References.IrCall, className, getSignature)
     }
 
-    private fun ExportDeclaration.Property.buildPropertyInstance(builder: TypeSpec.Builder, className: ClassName): List<FunSpec> {
+    private fun ExportDeclaration.Property.buildPropertyInstance(className: ClassName): TypeAndFuncs {
+        val builder = instanceBuilder()
 
         builder.primaryConstructor(FunSpec.constructorBuilder().addParameter("call", References.IrCall).build())
         builder.addProperty(PropertySpec.builder("call", References.IrCall).initializer("call").build())
@@ -135,7 +176,7 @@ object InstanceBuilder {
                 .build()
         )
 
-        return builderMethods("accessorInstance", "call", References.IrCall, className, getSignature)
+        return builder.build() to builderMethods("accessorInstance", "call", References.IrCall, className, getSignature)
     }
 
     private fun ExportDeclaration.Property.additionalPropertyDeclarations(instanceClass: ClassName): List<TypeSpec> {
@@ -201,8 +242,8 @@ object InstanceBuilder {
         return getterInstances.orEmpty() + setterInstances.orEmpty()
     }
 
-    private fun ExportDeclaration.Typealias.buildTypealiasInstance(builder: TypeSpec.Builder, className: ClassName): List<FunSpec> {
-        return emptyList()
+    private fun ExportDeclaration.Typealias.buildTypealiasInstance(className: ClassName): TypeAndFuncs {
+        return null
     }
 
     private fun TypeSpec.Builder.addTypeParameters(typeParameters: List<ExportDeclaration.TypeParameter>) {

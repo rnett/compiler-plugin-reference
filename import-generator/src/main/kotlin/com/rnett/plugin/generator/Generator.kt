@@ -27,6 +27,7 @@ fun TypeSpec.Builder.addContextProperty(): TypeSpec.Builder = apply {
     )
 }
 
+//TODO support for renames.  Nothing is done with them ATM.
 object PluginImportGenerator {
     fun generateMultiplatform(
         baseDirectory: File,

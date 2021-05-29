@@ -278,7 +278,7 @@ class PluginExporter(val context: IrPluginContext, val messageCollector: Message
     private fun IrClass.getDeclaration(): ExportDeclaration.Class {
         val enumNames = if (isEnumClass) {
             this.declarations.filterIsInstance<IrEnumEntry>()
-                .map { it.name.asString() }
+                .map { it.name.asString() to it.publicSignature }
         } else null
 
         val annotationParams = if (isAnnotationClass) {

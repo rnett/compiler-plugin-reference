@@ -11,6 +11,7 @@ object References {
     val ConstructorReference = ClassName.bestGuess("com.rnett.plugin.ConstructorReference")
     val FunctionReference = ClassName.bestGuess("com.rnett.plugin.FunctionReference")
     val PropertyReference = ClassName.bestGuess("com.rnett.plugin.PropertyReference")
+    val EnumEntryReference = ClassName.bestGuess("com.rnett.plugin.EnumEntryReference")
 
     val ResolvedClass = ClassName.bestGuess("com.rnett.plugin.ResolvedClass")
     val ResolvedTypealias = ClassName.bestGuess("com.rnett.plugin.ResolvedTypealias")
@@ -20,6 +21,7 @@ object References {
     val ResolvedEnumEntry = ClassName.bestGuess("com.rnett.plugin.ResolvedEnumEntry")
 
     val OpaqueAnnotationInstance = ClassName.bestGuess("com.rnett.plugin.OpaqueAnnotationInstance")
+    val EnumInstance = ClassName.bestGuess("com.rnett.plugin.EnumInstance")
 
     val String = STRING
 

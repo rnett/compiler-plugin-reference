@@ -63,7 +63,6 @@ class PluginExportIrGenerationExtension(val messageCollector: MessageCollector, 
     }
 
     override fun generate(moduleFragment: IrModuleFragment, pluginContext: IrPluginContext) {
-        //TODO use pluginContext.referenceTopLevel()
         moduleFragment.files.forEach {
             val outputFile = outputDir.resolve(it.kotlinFqName.toString() + "_" + it.name.substringBefore('.'))
 

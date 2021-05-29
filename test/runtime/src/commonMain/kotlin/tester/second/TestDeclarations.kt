@@ -28,6 +28,7 @@ annotation class NonExported(val s: String)
 enum class TestEnum {
     One, Two, Three;
 
+    @PluginExport
     val testProp: String = "test"
 }
 

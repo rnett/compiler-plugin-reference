@@ -23,7 +23,6 @@ internal object ReferenceBuilder {
 
     private const val objectName = "Reference"
 
-    //TODO add constant value
     fun referenceObject(declarationTree: DeclarationTree, fqName: ClassName): TypeSpec {
         val builder = TypeSpec.companionObjectBuilder(objectName)
 
