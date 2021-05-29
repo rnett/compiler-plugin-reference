@@ -120,7 +120,6 @@ sealed class ExportDeclaration {
         override val fqName: ResolvedName,
         override val signature: Signature,
         val typeParameters: List<TypeParameter>,
-        val expandedType: TypeString,
         override val customName: String? = null
     ) : ExportDeclaration()
 }

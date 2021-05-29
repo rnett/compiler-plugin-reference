@@ -31,7 +31,7 @@ fun commonizeChildren(parent: ResolvedName, platforms: Map<String, List<Declarat
 
 fun commonize(roots: Map<String, DeclarationTree>) = DeclarationTree.Package(
     ResolvedName.Root,
-    commonizeChildren(ResolvedName.Root, roots.mapValues { listOf(it.value) })
+    commonizeChildren(ResolvedName.Root, roots.filterValues { it.allDeclarations.isNotEmpty() }.mapValues { listOf(it.value) })
 ).removeExtraRoot()
 
 sealed class DeclarationTree(
@@ -46,6 +46,8 @@ sealed class DeclarationTree(
     abstract fun withChildren(children: List<DeclarationTree>): DeclarationTree
 
     val allDeclarations: List<ExportDeclaration> get() = listOfNotNull(declaration) + children.flatMap { it.allDeclarations }
+
+    val allPlatforms: Set<String> get() = setOfNotNull(if (this is PlatformSplit) platform else null) + children.flatMap { it.allPlatforms }
 
     override fun toString(): String {
         return fqName.fqName + " : $displayName" + (if (children.isNotEmpty()) "\n" else "") + children.joinToString("\n").prependIndent("    ")

@@ -35,7 +35,7 @@ object PluginImportGenerator {
         fileName: String,
         className: String = "Names"
     ) {
-
+        generate(baseDirectory, commonize(declarations.mapValues { DeclarationTree(it.value) }), packageName, fileName, className)
     }
 
     fun generateSingle(
@@ -45,15 +45,17 @@ object PluginImportGenerator {
         fileName: String,
         className: String = "Names"
     ) {
+        generate(baseDirectory, DeclarationTree(declarations), packageName, fileName, className)
+    }
 
+    fun generate(baseDirectory: File, declarationTree: DeclarationTree, packageName: String, fileName: String, className: String) {
         FileSpec.builder(packageName, fileName).apply {
             addComment("GENERATED, DO NOT EDIT")
             indent("    ")
 
             val rootClass = ClassName(packageName, className)
-            val tree = DeclarationTree(declarations)
-            val lookup = FqNameLookup(tree, rootClass)
-            addType(generate(rootClass, tree, lookup))
+            val lookup = FqNameLookup(declarationTree, rootClass)
+            addType(generate(rootClass, declarationTree, lookup))
 
         }.build().writeTo(baseDirectory)
     }

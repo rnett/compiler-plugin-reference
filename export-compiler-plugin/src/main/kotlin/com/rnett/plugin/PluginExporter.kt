@@ -7,6 +7,8 @@ import org.jetbrains.kotlin.cli.common.messages.CompilerMessageLocationWithRange
 import org.jetbrains.kotlin.cli.common.messages.CompilerMessageSeverity
 import org.jetbrains.kotlin.cli.common.messages.CompilerMessageSourceLocation
 import org.jetbrains.kotlin.cli.common.messages.MessageCollector
+import org.jetbrains.kotlin.descriptors.MemberDescriptor
+import org.jetbrains.kotlin.descriptors.PropertyAccessorDescriptor
 import org.jetbrains.kotlin.descriptors.ReceiverParameterDescriptor
 import org.jetbrains.kotlin.descriptors.TypeParameterDescriptor
 import org.jetbrains.kotlin.descriptors.effectiveVisibility
@@ -67,13 +69,31 @@ import org.jetbrains.kotlin.ir.util.kotlinFqName
 import org.jetbrains.kotlin.ir.util.primaryConstructor
 import org.jetbrains.kotlin.ir.util.render
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
+import org.jetbrains.kotlin.resolve.multiplatform.findExpects
 import org.jetbrains.kotlin.types.KotlinType
 import org.jetbrains.kotlin.types.Variance
 
-private fun IrAnnotationContainer.shouldExport(): Boolean = hasAnnotation(Names.PluginExport)
 
 class PluginExporter(val context: IrPluginContext, val messageCollector: MessageCollector, val export: (ExportDeclaration) -> Unit) :
     IrElementTransformerVoidWithContext() {
+
+    @OptIn(ObsoleteDescriptorBasedAPI::class)
+    private val IrDeclaration.isActual: Boolean
+        get() = descriptor.run { this is MemberDescriptor && this.isActual || this is PropertyAccessorDescriptor && this.correspondingProperty.isActual }
+
+    @OptIn(ObsoleteDescriptorBasedAPI::class)
+    private val IrDeclaration.isExpect: Boolean
+        get() = descriptor.run { this is MemberDescriptor && this.isExpect || this is PropertyAccessorDescriptor && this.correspondingProperty.isExpect }
+
+
+    @OptIn(ObsoleteDescriptorBasedAPI::class)
+    private fun IrDeclarationWithVisibility.shouldExport(): Boolean {
+        if (this.isActual) {
+            return hasAnnotation(Names.PluginExport) && descriptor.findExpects().none { it.annotations.hasAnnotation(Names.PluginExport) }
+        }
+
+        return hasAnnotation(Names.PluginExport)
+    }
 
     private fun IrElement.messageLocation(): CompilerMessageSourceLocation? {
         val range = currentFile.fileEntry.getSourceRangeInfo(this.startOffset, this.endOffset)
@@ -278,7 +298,6 @@ class PluginExporter(val context: IrPluginContext, val messageCollector: Message
             resolvedName,
             publicSignature,
             typeParameters.map { it.toTypeParameter() },
-            expandedType.toTypeString(),
             displayName
         )
 

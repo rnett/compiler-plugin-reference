@@ -4,6 +4,11 @@ import com.rnett.plugin.export.annotations.PluginExport
 import kotlin.reflect.KClass
 
 @PluginExport
+expect fun testExpectFun(): String
+
+expect fun testActualFun(): String
+
+@PluginExport
 annotation class TestAnnotation(
     val t: Int = 2,
     val s: String = testConst,

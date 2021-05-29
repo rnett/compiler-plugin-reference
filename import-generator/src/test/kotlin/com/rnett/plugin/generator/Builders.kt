@@ -68,7 +68,7 @@ interface NamespaceBuilder {
     fun Function(name: String) =
         Declaration(ExportDeclaration.Function(childName(name), Signature.None, TypeString.None, null, emptyList(), emptyList(), emptyList()))
 
-    fun Typealias(name: String) = Declaration(ExportDeclaration.Typealias(childName(name), Signature.None, emptyList(), TypeString.None))
+    fun Typealias(name: String) = Declaration(ExportDeclaration.Typealias(childName(name), Signature.None, emptyList()))
 }
 
 fun NamespaceBuilder.Declaration(declaration: ExportDeclaration) {

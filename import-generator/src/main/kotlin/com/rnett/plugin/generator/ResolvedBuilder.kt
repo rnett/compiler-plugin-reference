@@ -23,7 +23,7 @@ internal object ResolvedBuilder {
     ) {
         builder.addContextProperty()
 
-        if (declarationTree is DeclarationTree.Package) {
+        if (declarationTree is DeclarationTree.Package || declarationTree is DeclarationTree.PlatformSplit) {
             builder.addContextConstructor()
         } // added in build otherwise
 
