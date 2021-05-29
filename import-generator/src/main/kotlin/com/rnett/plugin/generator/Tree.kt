@@ -3,6 +3,37 @@ package com.rnett.plugin.generator
 import com.rnett.plugin.ExportDeclaration
 import com.rnett.plugin.ResolvedName
 
+fun commonizeChildren(parent: ResolvedName, platforms: Map<String, List<DeclarationTree>>): List<DeclarationTree> {
+    val common = platforms.values.first().mapNotNull { child ->
+        val subplatforms = platforms.mapValues { it.value.firstOrNull { it eqNoChildren child } }
+            .filterValues { it != null }
+            .mapValues { it.value!! }
+        if (subplatforms.keys == platforms.keys) {
+            val base = subplatforms.values.first()
+            base.withChildren(commonizeChildren(base.fqName, subplatforms.mapValues { it.value.children }))
+        } else
+            null
+    }
+
+    val subplatforms = platforms
+        .map {
+            val children = it.value.filter { child ->
+                common.none { it eqNoChildren child }
+            }
+
+            DeclarationTree.PlatformSplit(parent, it.key, children)
+        }
+        .filter { it.children.isNotEmpty() }
+
+    return common + subplatforms
+
+}
+
+fun commonize(roots: Map<String, DeclarationTree>) = DeclarationTree.Package(
+    ResolvedName.Root,
+    commonizeChildren(ResolvedName.Root, roots.mapValues { listOf(it.value) })
+).removeExtraRoot()
+
 sealed class DeclarationTree(
     val fqName: ResolvedName,
     children: List<DeclarationTree>,
@@ -20,6 +51,9 @@ sealed class DeclarationTree(
         return fqName.fqName + " : $displayName" + (if (children.isNotEmpty()) "\n" else "") + children.joinToString("\n").prependIndent("    ")
     }
 
+    infix fun eqNoChildren(other: DeclarationTree): Boolean =
+        fqName == other.fqName && declaration == other.declaration && this::class == other::class
+
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (other !is DeclarationTree) return false
@@ -27,6 +61,7 @@ sealed class DeclarationTree(
         if (fqName != other.fqName) return false
         if (children != other.children) return false
         if (declaration != other.declaration) return false
+        if (this::class != other::class) return false
 
         return true
     }
@@ -73,6 +108,15 @@ sealed class DeclarationTree(
         override fun withChildren(children: List<DeclarationTree>) = this
     }
 
+    class PlatformSplit(parentFqName: ResolvedName, val platform: String, children: List<DeclarationTree>) :
+        DeclarationTree(parentFqName.child(platform), children, platform) {
+        override val declaration: ExportDeclaration? = null
+
+        override fun withName(name: String): DeclarationTree = error("Can't rename platforms, and should never have to")
+
+        override fun withChildren(children: List<DeclarationTree>): DeclarationTree = PlatformSplit(fqName.parent!!, fqName.name, children)
+    }
+
     private fun collapsePackages(): DeclarationTree {
         if (children.size == 1) {
             val child = children[0]
@@ -99,6 +143,18 @@ sealed class DeclarationTree(
     }
 
     fun finalize() = this.disambiguateOverloads()
+
+    fun sort() = withChildren(children.sortedBy { it.fqName.fqName })
+
+    fun removeExtraRoot() = if (this is Package && this.isRoot && this.children.size == 1)
+        children[0]
+    else
+        this
+
+    fun ensureRoot() = if (this is Package && this.isRoot)
+        this
+    else
+        Package(ResolvedName.Root, listOf(this))
 
     companion object {
         operator fun invoke(declarations: Iterable<ExportDeclaration>): DeclarationTree {

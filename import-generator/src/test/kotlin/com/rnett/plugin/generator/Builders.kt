@@ -82,8 +82,19 @@ inline fun PackageBuilder.Package(name: String, body: PackageBuilder.() -> Unit)
     }
 }
 
+inline fun PlatformBuilder.Package(name: String, body: PackageBuilder.() -> Unit) {
+    val built = PackageBuilder(childName(name)).apply(body).build()
+    if (built.children.isNotEmpty()) {
+        child(built)
+    }
+}
+
 inline fun NamespaceBuilder.Class(name: String, body: ClassBuilder.() -> Unit = {}) {
     child(ClassBuilder(childName(name)).apply(body).build())
+}
+
+inline fun NamespaceBuilder.Platform(name: String, body: PlatformBuilder.() -> Unit = {}) {
+    child(PlatformBuilder(childName(name)).apply(body).build())
 }
 
 class PackageBuilder(val fqName: ResolvedName) : NamespaceBuilder {
@@ -106,6 +117,20 @@ class ClassBuilder(val fqName: ResolvedName) : NamespaceBuilder {
     override fun childName(name: String): ResolvedName = fqName.child(name)
 
     fun build() = DeclarationTree.Class(ExportDeclaration.Class(fqName, Signature.None, listOf(), null, null), declarations)
+
+    fun Constructor(name: String = "<init>") =
+        Declaration(ExportDeclaration.Constructor(childName(name), Signature.None, TypeString.None, emptyList(), emptyList()))
+}
+
+class PlatformBuilder(val fqName: ResolvedName) : NamespaceBuilder {
+    private val declarations: MutableList<DeclarationTree> = mutableListOf()
+    override fun child(child: DeclarationTree) {
+        declarations += child
+    }
+
+    override fun childName(name: String): ResolvedName = fqName.parent!!.child(name)
+
+    fun build() = DeclarationTree.PlatformSplit(fqName.parent!!, fqName.name, declarations)
 
     fun Constructor(name: String = "<init>") =
         Declaration(ExportDeclaration.Constructor(childName(name), Signature.None, TypeString.None, emptyList(), emptyList()))
