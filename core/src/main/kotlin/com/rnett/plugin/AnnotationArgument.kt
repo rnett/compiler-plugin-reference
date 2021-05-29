@@ -45,7 +45,7 @@ sealed class AnnotationArgument(val kind: Kind) {
     }
 
     @Serializable
-    data class Enum(val classFqName: ResolvedName, val name: String) : AnnotationArgument(Kind.Enum)
+    data class Enum(val classFqName: ResolvedName, val name: String, val ordinal: Int) : AnnotationArgument(Kind.Enum)
 
     @Serializable
     data class ClassRef(val fqName: ResolvedName) : AnnotationArgument(Kind.ClassRef)

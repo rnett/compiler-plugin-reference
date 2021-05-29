@@ -67,6 +67,7 @@ import org.jetbrains.kotlin.ir.util.isFunctionOrKFunction
 import org.jetbrains.kotlin.ir.util.isPrimitiveArray
 import org.jetbrains.kotlin.ir.util.isVararg
 import org.jetbrains.kotlin.ir.util.kotlinFqName
+import org.jetbrains.kotlin.ir.util.parentAsClass
 import org.jetbrains.kotlin.ir.util.parentClassOrNull
 import org.jetbrains.kotlin.ir.util.primaryConstructor
 import org.jetbrains.kotlin.ir.util.render
@@ -246,7 +247,12 @@ class PluginExporter(val context: IrPluginContext, val messageCollector: Message
     private fun IrExpression.toAnnotationArgument(): AnnotationArgument = when (this) {
         is IrConst<*> -> AnnotationArgument.Constant(toConstValue())
         is IrClassReference -> AnnotationArgument.ClassRef(classType.classFqName!!.toResolvedName())
-        is IrGetEnumValue -> AnnotationArgument.Enum(type.classFqName!!.toResolvedName(), symbol.owner.name.asString())
+        is IrGetEnumValue -> AnnotationArgument.Enum(
+            type.classFqName!!.toResolvedName(),
+            symbol.owner.name.asString(),
+            symbol.owner.parentAsClass.declarations.filterIsInstance<IrEnumEntry>()
+                .indexOfFirst { it.symbol == symbol }
+        )
         is IrConstructorCall -> {
             val klass = this.symbol.owner.constructedClass
             if (klass.isAnnotationClass) {

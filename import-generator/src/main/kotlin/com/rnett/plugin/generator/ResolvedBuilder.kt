@@ -189,6 +189,7 @@ internal object ResolvedBuilder {
         if (annotationProperties != null) {
             annotationProperties!!.forEach { (name, defaultValue) ->
                 if (defaultValue != null) {
+                    //TODO want to get without context.  Can do everything but annotations
 //                    builder.addProperty(
 //                        PropertySpec.builder(
 //                            "default" + name.capitalize(),

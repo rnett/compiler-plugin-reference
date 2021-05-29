@@ -63,7 +63,7 @@ sealed class Reference<S : IrBindableSymbol<*, T>, T : IrDeclaration, R : Resolv
 }
 
 abstract class ClassReference<R : ResolvedClass>(override val fqName: FqName, override val signature: IdSignature.PublicSignature) :
-    Reference<IrClassSymbol, IrClass, R>() {
+    Reference<IrClassSymbol, IrClass, R>(), AnnotationArgument {
     override fun doResolve(context: IrPluginContext): IrClassSymbol? = context.referenceClass(fqName)?.checkSignature()
 }
 

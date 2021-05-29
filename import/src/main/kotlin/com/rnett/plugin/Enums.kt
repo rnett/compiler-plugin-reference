@@ -11,7 +11,7 @@ import org.jetbrains.kotlin.ir.util.parentAsClass
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 
-interface EnumInstance {
+interface EnumInstance : AnnotationArgument {
     val name: String
     val ordinal: Int
 }
