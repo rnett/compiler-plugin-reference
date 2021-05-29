@@ -14,6 +14,7 @@ import com.squareup.kotlinpoet.TypeSpec
 import com.squareup.kotlinpoet.asTypeName
 
 internal object ResolvedBuilder {
+    //TODO add platform checks in the platform split's init blocks
     fun build(
         builder: TypeSpec.Builder,
         namesBuilder: TypeSpec.Builder,
@@ -26,6 +27,10 @@ internal object ResolvedBuilder {
         if (declarationTree is DeclarationTree.Package || declarationTree is DeclarationTree.PlatformSplit) {
             builder.addContextConstructor()
         } // added in build otherwise
+
+        if (declarationTree is DeclarationTree.PlatformSplit) {
+            val platform = declarationTree.platform
+        }
 
         declarationTree.declaration?.let { builder.build(it, namesBuilder, current, nameLookup) }
 

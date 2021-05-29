@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<module external.system.module.type="sourceSet" type="JAVA_MODULE" version="4">
+  <component name="NewModuleRootManager">
+    <output-test url="file://$MODULE_DIR$/../../../test/runtime/build/classes/kotlin/native/test/klib" />
+    <exclude-output />
+    <content url="file://$MODULE_DIR$/../../../test/runtime/src/nativeTest" />
+    <orderEntry type="jdk" jdkName="Kotlin SDK" jdkType="KotlinSDK" />
+    <orderEntry type="sourceFolder" forTests="false" />
+    <orderEntry type="library" scope="PROVIDED" name="Kotlin/Native 1.5.10 - stdlib" level="project" />
+    <orderEntry type="module" module-name="test.runtime.commonMain" scope="TEST" />
+    <orderEntry type="module" module-name="test.runtime.commonTest" scope="TEST" production-on-test="" />
+    <orderEntry type="module" module-name="test.runtime.nativeMain" scope="TEST" />
+    <orderEntry type="module" module-name="compiler-plugin-reference.export.nativeMain" scope="TEST" />
+    <orderEntry type="library" scope="PROVIDED" name="Kotlin/Native 1.5.10 - builtin [mingw_x64]" level="project" />
+    <orderEntry type="library" scope="PROVIDED" name="Kotlin/Native 1.5.10 - gdiplus [mingw_x64]" level="project" />
+    <orderEntry type="library" scope="PROVIDED" name="Kotlin/Native 1.5.10 - iconv [mingw_x64]" level="project" />
+    <orderEntry type="library" scope="PROVIDED" name="Kotlin/Native 1.5.10 - opengl32 [mingw_x64]" level="project" />
+    <orderEntry type="library" scope="PROVIDED" name="Kotlin/Native 1.5.10 - posix [mingw_x64]" level="project" />
+    <orderEntry type="library" scope="PROVIDED" name="Kotlin/Native 1.5.10 - windows [mingw_x64]" level="project" />
+    <orderEntry type="library" scope="PROVIDED" name="Kotlin/Native 1.5.10 - zlib [mingw_x64]" level="project" />
+    <orderEntry type="library" scope="TEST" name="Gradle: org.jetbrains.kotlin:kotlin-stdlib-common:1.5.10" level="project" />
+    <orderEntry type="module-library" scope="TEST">
+      <library>
+        <CLASSES>
+          <root url="jar://$MODULE_DIR$/../../../export/build/libs/export-metadata-1.0-SNAPSHOT.jar!/" />
+        </CLASSES>
+        <JAVADOC />
+        <SOURCES />
+      </library>
+    </orderEntry>
+  </component>
+  <component name="TestModuleProperties" production-module="test.runtime.nativeMain" />
+</module>

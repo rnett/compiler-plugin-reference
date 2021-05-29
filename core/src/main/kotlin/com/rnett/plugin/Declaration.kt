@@ -4,13 +4,16 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import java.io.File
+
+
+internal val json: Json = Json {
+    prettyPrint = true
+}
 
 @Serializable
 sealed class ExportDeclaration {
     companion object {
-        private val json: Json = Json {
-
-        }
 
         fun serialize(declarations: Iterable<ExportDeclaration>): String {
             try {
@@ -25,6 +28,56 @@ sealed class ExportDeclaration {
                 return json.decodeFromString(data)
             } catch (e: Throwable) {
                 throw IllegalStateException("Could not deserialize exported declarations", e)
+            }
+        }
+
+        const val platformFileName = "platform"
+        const val declarationDirName = "declarations"
+
+        fun loadSinglePlatform(dir: File): Pair<Platform, List<ExportDeclaration>> {
+            val platformFile = dir.resolve(platformFileName)
+            val declarationsDir = dir.resolve(declarationDirName)
+
+            if (!platformFile.exists())
+                error("Platform file \"platform\" missing in $dir")
+
+            val platform = Platform.deserialize(platformFile.readText())
+
+            val declarations = if (declarationsDir.exists())
+                declarationsDir.listFiles().orEmpty().flatMap { deserialize(it.readText()) }
+            else
+                emptyList()
+
+            return platform to declarations
+        }
+
+        fun loadMultiPlatform(dir: File): Map<Platform, List<ExportDeclaration>> =
+            dir.listFiles().orEmpty().associate {
+                val (platform, declarations) = loadSinglePlatform(it)
+                platform.copy(target = it.name) to declarations
+            }
+
+        fun saveSinglePlatform(
+            dir: File,
+            platform: Platform,
+            declarations: Map<String, List<ExportDeclaration>>,
+            deleteDeclarations: Boolean = false
+        ) {
+            if (declarations.values.all { it.isEmpty() }) return
+
+            val platformFile = dir.resolve(platformFileName)
+            val declarationsDir = dir.resolve(declarationDirName)
+
+            if (deleteDeclarations && declarationsDir.exists()) {
+                declarationsDir.deleteRecursively()
+            }
+
+            dir.mkdirs()
+            declarationsDir.mkdirs()
+
+            platformFile.writeText(Platform.serialize(platform))
+            declarations.forEach { (fileName, declarations) ->
+                declarationsDir.resolve(fileName).writeText(serialize(declarations))
             }
         }
     }

@@ -4,6 +4,7 @@ import com.rnett.plugin.ExportDeclaration
 import com.rnett.plugin.ResolvedName
 
 fun commonizeChildren(parent: ResolvedName, platforms: Map<String, List<DeclarationTree>>): List<DeclarationTree> {
+//    val allHeaders =
     val common = platforms.values.first().mapNotNull { child ->
         val subplatforms = platforms.mapValues { it.value.firstOrNull { it eqNoChildren child } }
             .filterValues { it != null }

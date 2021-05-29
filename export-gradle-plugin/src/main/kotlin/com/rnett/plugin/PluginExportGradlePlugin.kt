@@ -20,11 +20,14 @@ class PluginExportGradlePlugin : KotlinCompilerPluginSupportPlugin {
 
         val basePath = project.buildDir.resolve("pluginExport")
 
-        val exportDir = if (project.extensions.findByType(KotlinSingleTargetExtension::class.java) != null) {
-            basePath
+
+        val targetName = if (project.extensions.findByType(KotlinSingleTargetExtension::class.java) != null) {
+            null
         } else {
-            basePath.resolve(target.name)
+            target.name
         }
+
+        val exportDir = targetName?.let { basePath.resolve(it) } ?: basePath
 
         project.tasks.named(kotlinCompilation.compileKotlinTaskName).configure {
             it.outputs.dir(exportDir)
@@ -32,8 +35,12 @@ class PluginExportGradlePlugin : KotlinCompilerPluginSupportPlugin {
         }
 
         return project.provider {
-            listOf(
-                SubpluginOption("outputDir", exportDir.absolutePath)
+            listOfNotNull(
+                SubpluginOption("outputDir", exportDir.absolutePath),
+                targetName?.let { SubpluginOption("targetName", it) },
+                SubpluginOption("sourceSets", kotlinCompilation.allKotlinSourceSets.joinToString("|") {
+                    it.name
+                }),
             )
         }
     }
@@ -45,6 +52,13 @@ class PluginExportGradlePlugin : KotlinCompilerPluginSupportPlugin {
         BuildConfig.PROJECT_ARTIFACT_ID,
         BuildConfig.PROJECT_VERSION
     )
+
+    override fun getPluginArtifactForNative(): SubpluginArtifact = SubpluginArtifact(
+        BuildConfig.PROJECT_GROUP_ID,
+        BuildConfig.PROJECT_ARTIFACT_ID + "-native",
+        BuildConfig.PROJECT_VERSION
+    )
+
 
     override fun isApplicable(kotlinCompilation: KotlinCompilation<*>): Boolean = kotlinCompilation.compilationName == "main"
 }

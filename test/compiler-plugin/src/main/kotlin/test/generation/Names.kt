@@ -43,6 +43,7 @@ import org.jetbrains.kotlin.ir.util.isSetter
 import org.jetbrains.kotlin.ir.util.substitute
 import org.jetbrains.kotlin.ir.util.typeSubstitutionMap
 import org.jetbrains.kotlin.name.FqName
+import org.jetbrains.kotlin.platform.js.isJs
 import test.generation.Names.tester.second.TestEnum.Instance
 
 public class Names(
@@ -916,6 +917,10 @@ public class Names(
                 private val _context: IrPluginContext
             ) {
                 public fun jsOnly(): jsOnly = jsOnly(_context)
+
+                init {
+                    check(_context.platform?.isJs())
+                }
 
                 /**
                  * Resolved reference to `tester.second.jsOnly`

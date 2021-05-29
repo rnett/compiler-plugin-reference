@@ -2,6 +2,16 @@ plugins {
     kotlin("jvm")
     id("org.jetbrains.dokka")
     kotlin("plugin.serialization")
+    id("com.github.johnrengelman.shadow")
+}
+
+
+tasks.shadowJar {
+    dependencies {
+        exclude(dependency("org.jetbrains.kotlin:.*"))
+        exclude(dependency("org.jetbrains.annotations:.*"))
+        exclude(dependency("org.intellij.lang.annotations:.*"))
+    }
 }
 
 dependencies {
