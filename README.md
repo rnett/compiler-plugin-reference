@@ -1,6 +1,6 @@
 # Compiler Plugin Reference
 
-A compiler plugin to export declarations, and a gradle plugin to generate IR references to those declarations.
+A compiler plugin to export declarations, and a gradle plugin to generate IR references to those declarations.  Resolution is based on FqNames and IdSignatures.
 
 Currently WIP.
 
