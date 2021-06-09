@@ -1,37 +1,20 @@
 package com.rnett.plugin
 
-import org.jetbrains.kotlin.ir.declarations.IrClass
-import org.jetbrains.kotlin.ir.declarations.IrConstructor
-import org.jetbrains.kotlin.ir.declarations.IrDeclaration
-import org.jetbrains.kotlin.ir.declarations.IrProperty
-import org.jetbrains.kotlin.ir.declarations.IrSimpleFunction
-import org.jetbrains.kotlin.ir.declarations.IrTypeAlias
-import org.jetbrains.kotlin.ir.symbols.IrBindableSymbol
-import org.jetbrains.kotlin.ir.symbols.IrClassSymbol
-import org.jetbrains.kotlin.ir.symbols.IrConstructorSymbol
-import org.jetbrains.kotlin.ir.symbols.IrPropertySymbol
-import org.jetbrains.kotlin.ir.symbols.IrSimpleFunctionSymbol
-import org.jetbrains.kotlin.ir.symbols.IrSymbol
-import org.jetbrains.kotlin.ir.symbols.IrTypeAliasSymbol
+import org.jetbrains.kotlin.descriptors.*
+import org.jetbrains.kotlin.ir.declarations.*
+import org.jetbrains.kotlin.ir.symbols.*
 import org.jetbrains.kotlin.ir.types.IrType
 import org.jetbrains.kotlin.name.FqName
 
-sealed class ResolvedReference<S : IrBindableSymbol<*, T>, T : IrDeclaration>(val symbol: S, val fqName: FqName) {
+sealed class ResolvedReference<S : IrBindableSymbol<D, T>, T : IrDeclaration, D : DeclarationDescriptor>(
+    val symbol: S,
+    val fqName: FqName
+) :
+    IrDelegatingSymbol<S, T, D>(symbol)
 
-    override fun equals(other: Any?): Boolean {
-        if (this === other) return true
-        if (symbol === other) return true
-        if (other is IrSymbol && symbol == other) return true
-        return false
-    }
-
-    override fun hashCode(): Int {
-        return symbol.hashCode()
-    }
-}
-
-open class ResolvedClass(symbol: IrClassSymbol, fqName: FqName) : ResolvedReference<IrClassSymbol, IrClass>(symbol, fqName),
-    IrClassSymbol by symbol {
+open class ResolvedClass(symbol: IrClassSymbol, fqName: FqName) :
+    ResolvedReference<IrClassSymbol, IrClass, ClassDescriptor>(symbol, fqName),
+    IrClassSymbol {
 
     override fun toString(): String {
         return "ResolvedClass(fqName=$fqName, symbol=$symbol)"
@@ -39,7 +22,7 @@ open class ResolvedClass(symbol: IrClassSymbol, fqName: FqName) : ResolvedRefere
 }
 
 open class ResolvedTypealias(symbol: IrTypeAliasSymbol, fqName: FqName) :
-    ResolvedReference<IrTypeAliasSymbol, IrTypeAlias>(symbol, fqName), IrTypeAliasSymbol by symbol {
+    ResolvedReference<IrTypeAliasSymbol, IrTypeAlias, TypeAliasDescriptor>(symbol, fqName), IrTypeAliasSymbol {
     val expandedType: IrType get() = owner.expandedType
 
     override fun toString(): String {
@@ -48,7 +31,8 @@ open class ResolvedTypealias(symbol: IrTypeAliasSymbol, fqName: FqName) :
 }
 
 open class ResolvedConstructor(symbol: IrConstructorSymbol, fqName: FqName) :
-    ResolvedReference<IrConstructorSymbol, IrConstructor>(symbol, fqName), IrConstructorSymbol by symbol {
+    ResolvedReference<IrConstructorSymbol, IrConstructor, ClassConstructorDescriptor>(symbol, fqName),
+    IrConstructorSymbol {
 
     override fun toString(): String {
         return "ResolvedConstructor(fqName=$fqName, symbol=$symbol)"
@@ -56,7 +40,8 @@ open class ResolvedConstructor(symbol: IrConstructorSymbol, fqName: FqName) :
 }
 
 open class ResolvedFunction(symbol: IrSimpleFunctionSymbol, fqName: FqName) :
-    ResolvedReference<IrSimpleFunctionSymbol, IrSimpleFunction>(symbol, fqName), IrSimpleFunctionSymbol by symbol {
+    ResolvedReference<IrSimpleFunctionSymbol, IrSimpleFunction, FunctionDescriptor>(symbol, fqName),
+    IrSimpleFunctionSymbol {
 
     override fun toString(): String {
         return "ResolvedFunction(fqName=$fqName, symbol=$symbol)"
@@ -64,7 +49,7 @@ open class ResolvedFunction(symbol: IrSimpleFunctionSymbol, fqName: FqName) :
 }
 
 open class ResolvedProperty(symbol: IrPropertySymbol, fqName: FqName) :
-    ResolvedReference<IrPropertySymbol, IrProperty>(symbol, fqName), IrPropertySymbol by symbol {
+    ResolvedReference<IrPropertySymbol, IrProperty, PropertyDescriptor>(symbol, fqName), IrPropertySymbol {
 
     override fun toString(): String {
         return "ResolvedProperty(fqName=$fqName, symbol=$symbol)"

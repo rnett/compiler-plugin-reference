@@ -1,6 +1,7 @@
 package com.rnett.plugin
 
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
+import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.ir.builders.IrBuilderWithScope
 import org.jetbrains.kotlin.ir.declarations.IrEnumEntry
 import org.jetbrains.kotlin.ir.expressions.impl.IrGetEnumValueImpl
@@ -16,7 +17,11 @@ interface EnumInstance : AnnotationArgument {
     val ordinal: Int
 }
 
-class EnumEntryReference<E : EnumInstance>(val classFqName: FqName, instanceGetter: () -> E, override val signature: IdSignature.PublicSignature) :
+class EnumEntryReference<E : EnumInstance>(
+    val classFqName: FqName,
+    instanceGetter: () -> E,
+    override val signature: IdSignature.PublicSignature
+) :
     Reference<IrEnumEntrySymbol, IrEnumEntry, ResolvedEnumEntry<E>>() {
     override fun doResolve(context: IrPluginContext): IrEnumEntrySymbol? =
         (context.referenceClass(classFqName) ?: error("Enum class $classFqName not found"))
@@ -29,16 +34,19 @@ class EnumEntryReference<E : EnumInstance>(val classFqName: FqName, instanceGett
     val name by lazy { instance.name }
     val ordinal by lazy { instance.ordinal }
 
-    override fun getResolvedReference(context: IrPluginContext, symbol: IrEnumEntrySymbol): ResolvedEnumEntry<E> = ResolvedEnumEntry(this, symbol)
+    override fun getResolvedReference(context: IrPluginContext, symbol: IrEnumEntrySymbol): ResolvedEnumEntry<E> =
+        ResolvedEnumEntry(this, symbol)
+
     override val fqName: FqName = classFqName.child(Name.guessByFirstCharacter(name))
 }
 
 class ResolvedEnumEntry<E : EnumInstance>(val reference: EnumEntryReference<E>, symbol: IrEnumEntrySymbol) :
-    ResolvedReference<IrEnumEntrySymbol, IrEnumEntry>(symbol, reference.fqName), IrEnumEntrySymbol by symbol {
+    ResolvedReference<IrEnumEntrySymbol, IrEnumEntry, ClassDescriptor>(symbol, reference.fqName), IrEnumEntrySymbol {
 
     val instance: E by lazy { reference.instance }
 
-    fun get(builder: IrBuilderWithScope) = IrGetEnumValueImpl(builder.startOffset, builder.endOffset, symbol.owner.parentAsClass.defaultType, symbol)
+    fun get(builder: IrBuilderWithScope) =
+        IrGetEnumValueImpl(builder.startOffset, builder.endOffset, symbol.owner.parentAsClass.defaultType, symbol)
 
     val name by lazy { instance.name }
     val ordinal by lazy { instance.ordinal }
