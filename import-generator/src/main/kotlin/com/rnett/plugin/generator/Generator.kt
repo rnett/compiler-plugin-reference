@@ -1,6 +1,7 @@
 package com.rnett.plugin.generator
 
 import com.rnett.plugin.ExportDeclaration
+import com.rnett.plugin.Platform
 import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.FileSpec
 import com.squareup.kotlinpoet.FunSpec
@@ -31,25 +32,40 @@ fun TypeSpec.Builder.addContextProperty(): TypeSpec.Builder = apply {
 object PluginImportGenerator {
     fun generateMultiplatform(
         baseDirectory: File,
-        declarations: Map<String, Iterable<ExportDeclaration>>,
+        declarations: Map<Platform, List<ExportDeclaration>>,
         packageName: String,
         fileName: String,
         className: String = "Names"
     ) {
-        generate(baseDirectory, commonize(declarations.mapValues { DeclarationTree(it.value) }), packageName, fileName, className)
+        //TODO new, source set based commonizer
+        generate(
+            baseDirectory,
+            commonize(declarations.mapValues { DeclarationTree(it.value) }),
+            packageName,
+            fileName,
+            className
+        )
     }
 
     fun generateSingle(
         baseDirectory: File,
-        declarations: Iterable<ExportDeclaration>,
+        platform: Platform,
+        declarations: List<ExportDeclaration>,
         packageName: String,
         fileName: String,
         className: String = "Names"
     ) {
+        //TODO platform checks
         generate(baseDirectory, DeclarationTree(declarations), packageName, fileName, className)
     }
 
-    fun generate(baseDirectory: File, declarationTree: DeclarationTree, packageName: String, fileName: String, className: String) {
+    fun generate(
+        baseDirectory: File,
+        declarationTree: DeclarationTree,
+        packageName: String,
+        fileName: String,
+        className: String
+    ) {
         FileSpec.builder(packageName, fileName).apply {
             addComment("GENERATED, DO NOT EDIT")
             indent("    ")

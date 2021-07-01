@@ -5,7 +5,7 @@ plugins {
 }
 
 dependencies {
-    compileOnly("org.jetbrains.kotlin:kotlin-compiler-embeddable:1.5.10")
+    compileOnly("org.jetbrains.kotlin:kotlin-compiler-embeddable:1.5.20")
     implementation(project(":core"))
 
 

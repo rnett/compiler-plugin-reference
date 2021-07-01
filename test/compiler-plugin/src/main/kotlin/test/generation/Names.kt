@@ -43,7 +43,6 @@ import org.jetbrains.kotlin.ir.util.isSetter
 import org.jetbrains.kotlin.ir.util.substitute
 import org.jetbrains.kotlin.ir.util.typeSubstitutionMap
 import org.jetbrains.kotlin.name.FqName
-import org.jetbrains.kotlin.platform.js.isJs
 import test.generation.Names.tester.second.TestEnum.Instance
 
 public class Names(
@@ -73,9 +72,11 @@ public class Names(
 
             public fun WithTypeParams(): WithTypeParams = WithTypeParams(_context)
 
-            public fun js(): js = js(_context)
+            public fun jsMain(): jsMain = jsMain(_context)
 
-            public fun jvm(): jvm = jvm(_context)
+            public fun jvmMain(): jvmMain = jvmMain(_context)
+
+            public fun nativeMain(): nativeMain = nativeMain(_context)
 
             public fun testConst(): testConst = testConst(_context)
 
@@ -913,14 +914,10 @@ public class Names(
                 }
             }
 
-            public class js(
+            public class jsMain(
                 private val _context: IrPluginContext
             ) {
                 public fun jsOnly(): jsOnly = jsOnly(_context)
-
-                init {
-                    check(_context.platform?.isJs())
-                }
 
                 /**
                  * Resolved reference to `tester.second.jsOnly`
@@ -1028,11 +1025,11 @@ public class Names(
                 }
 
                 public companion object Reference {
-                    public val jsOnly: jsOnly.Reference = js.jsOnly.Reference
+                    public val jsOnly: jsOnly.Reference = jsMain.jsOnly.Reference
                 }
             }
 
-            public class jvm(
+            public class jvmMain(
                 private val _context: IrPluginContext
             ) {
                 public fun jvmOnly(): jvmOnly = jvmOnly(_context)
@@ -1175,9 +1172,98 @@ public class Names(
                 }
 
                 public companion object Reference {
-                    public val jvmOnly: jvmOnly.Reference = jvm.jvmOnly.Reference
+                    public val jvmOnly: jvmOnly.Reference = jvmMain.jvmOnly.Reference
 
-                    public val testActualFun: testActualFun.Reference = jvm.testActualFun.Reference
+                    public val testActualFun: testActualFun.Reference =
+                        jvmMain.testActualFun.Reference
+                }
+            }
+
+            public class nativeMain(
+                private val _context: IrPluginContext
+            ) {
+                public fun nativeOnly(): nativeOnly = nativeOnly(_context)
+
+                /**
+                 * Resolved reference to `tester.second.nativeOnly`
+                 *
+                 * Value parameters:
+                 * * `arg: kotlin.Int`
+                 *
+                 * Return type: `kotlin.Unit`
+                 */
+                public class nativeOnly private constructor(
+                    private val _context: IrPluginContext,
+                    symbol: IrSimpleFunctionSymbol
+                ) : ResolvedFunction(symbol, fqName) {
+                    /**
+                     * Get the return type.
+                     */
+                    public val returnType: IrType = owner.returnType
+
+                    public constructor(context: IrPluginContext) : this(
+                        context,
+                        resolveSymbol(context)
+                    )
+
+                    /**
+                     * Call the function
+                     *
+                     * @param arg `kotlin.Int`
+                     * @return `kotlin.Unit`
+                     */
+                    public fun call(builder: IrBuilderWithScope, arg: IrExpression): IrCall =
+                        builder.irCall(this).apply {
+                            type = owner.returnType
+                            putValueArgument(0, arg)
+                        }
+
+
+                    public class Instance(
+                        public val call: IrCall
+                    ) {
+                        init {
+                            val signature = call.symbol.signature
+                            val requiredSignature = nativeOnly.signature
+                            require(signature == requiredSignature) {
+                                """Instance's signature $signature did not match the required signature of $requiredSignature"""
+                            }
+                        }
+
+                        public val arg: IrExpression?
+                            get() = call.getValueArgument(0)
+                    }
+
+                    public companion object Reference :
+                        FunctionReference<nativeOnly>(
+                            FqName("tester.second.nativeOnly"),
+                            IdSignature.PublicSignature(
+                                "tester.second",
+                                "nativeOnly", -5197429736103048112, 0
+                            )
+                        ) {
+                        public override fun getResolvedReference(
+                            context: IrPluginContext,
+                            symbol: IrSimpleFunctionSymbol
+                        ): nativeOnly = nativeOnly(
+                            context,
+                            symbol
+                        )
+
+                        public fun instance(call: IrCall): Instance = Instance(call)
+
+                        public fun instanceOrNull(call: IrCall): Instance? {
+                            if (call.symbol.signature == nativeOnly.signature) {
+                                return Instance(call)
+                            } else {
+                                return null
+                            }
+                        }
+                    }
+                }
+
+                public companion object Reference {
+                    public val nativeOnly: nativeOnly.Reference = nativeMain.nativeOnly.Reference
                 }
             }
 
@@ -1448,10 +1534,11 @@ public class Names(
                  *
                  * @param T `? : kotlin.Number`
                  */
-                public fun type(T: IrType): IrType = (owner.getter?.returnType ?: owner.backingField?.type)!!.substitute(
-                    owner.getter!!.typeParameters,
-                    listOf(T)
-                )
+                public fun type(T: IrType): IrType =
+                    (owner.getter?.returnType ?: owner.backingField?.type)!!.substitute(
+                        owner.getter!!.typeParameters,
+                        listOf(T)
+                    )
 
                 /**
                  * Call the getter
@@ -1844,9 +1931,11 @@ public class Names(
                 public val WithTypeParams: WithTypeParams.Reference =
                     second.WithTypeParams.Reference
 
-                public val js: js.Reference = second.js.Reference
+                public val jsMain: jsMain.Reference = second.jsMain.Reference
 
-                public val jvm: jvm.Reference = second.jvm.Reference
+                public val jvmMain: jvmMain.Reference = second.jvmMain.Reference
+
+                public val nativeMain: nativeMain.Reference = second.nativeMain.Reference
 
                 public val testConst: testConst.Reference = second.testConst.Reference
 

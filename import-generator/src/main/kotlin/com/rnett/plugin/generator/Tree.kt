@@ -1,39 +1,11 @@
 package com.rnett.plugin.generator
 
 import com.rnett.plugin.ExportDeclaration
+import com.rnett.plugin.PlatformType
 import com.rnett.plugin.ResolvedName
 
-fun commonizeChildren(parent: ResolvedName, platforms: Map<String, List<DeclarationTree>>): List<DeclarationTree> {
-//    val allHeaders =
-    val common = platforms.values.first().mapNotNull { child ->
-        val subplatforms = platforms.mapValues { it.value.firstOrNull { it eqNoChildren child } }
-            .filterValues { it != null }
-            .mapValues { it.value!! }
-        if (subplatforms.keys == platforms.keys) {
-            val base = subplatforms.values.first()
-            base.withChildren(commonizeChildren(base.fqName, subplatforms.mapValues { it.value.children }))
-        } else
-            null
-    }
+data class ResolvedPlatform(val targets: Set<String>, val types: Set<PlatformType>, val sourceSet: String)
 
-    val subplatforms = platforms
-        .map {
-            val children = it.value.filter { child ->
-                common.none { it eqNoChildren child }
-            }
-
-            DeclarationTree.PlatformSplit(parent, it.key, children)
-        }
-        .filter { it.children.isNotEmpty() }
-
-    return common + subplatforms
-
-}
-
-fun commonize(roots: Map<String, DeclarationTree>) = DeclarationTree.Package(
-    ResolvedName.Root,
-    commonizeChildren(ResolvedName.Root, roots.filterValues { it.allDeclarations.isNotEmpty() }.mapValues { listOf(it.value) })
-).removeExtraRoot()
 
 sealed class DeclarationTree(
     val fqName: ResolvedName,
@@ -48,10 +20,11 @@ sealed class DeclarationTree(
 
     val allDeclarations: List<ExportDeclaration> get() = listOfNotNull(declaration) + children.flatMap { it.allDeclarations }
 
-    val allPlatforms: Set<String> get() = setOfNotNull(if (this is PlatformSplit) platform else null) + children.flatMap { it.allPlatforms }
+    val allPlatforms: Set<String> get() = setOfNotNull(if (this is PlatformSplit) platform.sourceSet else null) + children.flatMap { it.allPlatforms }
 
     override fun toString(): String {
-        return fqName.fqName + " : $displayName" + (if (children.isNotEmpty()) "\n" else "") + children.joinToString("\n").prependIndent("    ")
+        return fqName.fqName + " : $displayName" + (if (children.isNotEmpty()) "\n" else "") + children.joinToString("\n")
+            .prependIndent("    ")
     }
 
     infix fun eqNoChildren(other: DeclarationTree): Boolean =
@@ -111,13 +84,14 @@ sealed class DeclarationTree(
         override fun withChildren(children: List<DeclarationTree>) = this
     }
 
-    class PlatformSplit(parentFqName: ResolvedName, val platform: String, children: List<DeclarationTree>) :
-        DeclarationTree(parentFqName.child(platform), children, platform) {
+    class PlatformSplit(parentFqName: ResolvedName, val platform: ResolvedPlatform, children: List<DeclarationTree>) :
+        DeclarationTree(parentFqName.child(platform.sourceSet), children, platform.sourceSet) {
         override val declaration: ExportDeclaration? = null
 
         override fun withName(name: String): DeclarationTree = error("Can't rename platforms, and should never have to")
 
-        override fun withChildren(children: List<DeclarationTree>): DeclarationTree = PlatformSplit(fqName.parent!!, fqName.name, children)
+        override fun withChildren(children: List<DeclarationTree>): DeclarationTree =
+            PlatformSplit(fqName.parent!!, platform, children)
     }
 
     private fun collapsePackages(): DeclarationTree {
@@ -177,17 +151,18 @@ sealed class DeclarationTree(
                     Leaf(it)
             }.toMutableList()
 
-            val subTrees = declarations.filter { it.fqName.parts.size - 1 > index }.groupBy { it.fqName.parts[index] }.mapKeys {
-                if (prefix.isNotBlank())
-                    "$prefix.${it.key}"
-                else
-                    it.key
-            }.map {
-                val name = it.key
-                val topClass = leaves.filterIsInstance<Class>().firstOrNull { it.fqName.fqName == name }
-                topClass?.let { leaves.remove(it) }
-                buildNode(index + 1, name, topClass?.declaration, it.value)
-            }
+            val subTrees =
+                declarations.filter { it.fqName.parts.size - 1 > index }.groupBy { it.fqName.parts[index] }.mapKeys {
+                    if (prefix.isNotBlank())
+                        "$prefix.${it.key}"
+                    else
+                        it.key
+                }.map {
+                    val name = it.key
+                    val topClass = leaves.filterIsInstance<Class>().firstOrNull { it.fqName.fqName == name }
+                    topClass?.let { leaves.remove(it) }
+                    buildNode(index + 1, name, topClass?.declaration, it.value)
+                }
 
             return if (topClass == null) {
                 Package(ResolvedName(prefix), subTrees + leaves)

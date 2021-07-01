@@ -52,10 +52,12 @@ sealed class ExportDeclaration {
         }
 
         fun loadMultiPlatform(dir: File): Map<Platform, List<ExportDeclaration>> =
-            dir.listFiles().orEmpty().associate {
-                val (platform, declarations) = loadSinglePlatform(it)
-                platform.copy(target = it.name) to declarations
-            }
+            dir.listFiles().orEmpty()
+                .filter { it.list().orEmpty().isNotEmpty() }
+                .associate {
+                    val (platform, declarations) = loadSinglePlatform(it)
+                    platform.copy(target = it.name) to declarations
+                }
 
         fun saveSinglePlatform(
             dir: File,
@@ -111,7 +113,13 @@ sealed class ExportDeclaration {
     data class TypeParameter(val name: String, val index: Int, val variance: Variance, val supertypes: List<TypeString>)
 
     @Serializable
-    data class Param(val name: String, val index: Int, val optional: Boolean, val varargs: Boolean, val type: TypeString)
+    data class Param(
+        val name: String,
+        val index: Int,
+        val optional: Boolean,
+        val varargs: Boolean,
+        val type: TypeString
+    )
 
     @Serializable
     data class Receiver(val typeNic: String, val type: TypeString)

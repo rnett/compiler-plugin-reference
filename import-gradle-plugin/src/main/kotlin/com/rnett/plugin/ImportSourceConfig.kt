@@ -15,19 +15,21 @@ import java.io.File
 private fun Project.pluginExport(targetName: String): File =
     buildDir.resolve("pluginExport").resolve(targetName)
 
-data class ImportConfig(@get:Nested val source: ImportSourceConfig, @get:Input var packageName: String, @get:Input var fileName: String = "Names") {
+data class ImportConfig(
+    @get:Nested val source: ImportSourceConfig,
+    @get:Input var packageName: String,
+    @get:Input var fileName: String = "Names"
+) {
     internal fun outputFile(baseDir: File) =
         baseDir.resolve(packageName.replace(".", "/"))
             .resolve("${fileName}.kt")
 
     internal fun generate(outputDir: File) {
         if (source.isSinglePlatform) {
-            val declarations = source.inputDir.listFiles().orEmpty().flatMap { ExportDeclaration.deserialize(it.readText()) }
-            PluginImportGenerator.generateSingle(outputDir, declarations, packageName, fileName)
+            val (platform, declarations) = ExportDeclaration.loadSinglePlatform(source.inputDir)
+            PluginImportGenerator.generateSingle(outputDir, platform, declarations, packageName, fileName)
         } else {
-            val declarations = source.inputDir.listFiles { it: File -> it.isDirectory }.orEmpty().associate {
-                it.name to it.listFiles().orEmpty().flatMap { ExportDeclaration.deserialize(it.readText()) }
-            }
+            val declarations = ExportDeclaration.loadMultiPlatform(source.inputDir)
             PluginImportGenerator.generateMultiplatform(outputDir, declarations, packageName, fileName)
         }
     }
@@ -73,7 +75,8 @@ sealed class ImportSourceConfig() {
         override val inputDir: File = source.pluginExport("")
     }
 
-    data class SingleMultiPlatform(override val source: Project, @get:Input val targetName: String) : ImportSourceConfig() {
+    data class SingleMultiPlatform(override val source: Project, @get:Input val targetName: String) :
+        ImportSourceConfig() {
         override val dependencyTaskNames: List<String>
             get() = (source.extensions.findByType(KotlinMultiplatformExtension::class.java)
                 ?: error("Project ${source.path} is not a multiplatform Kotlin project, but multiplatform pluginExport used"))

@@ -30,7 +30,7 @@ class PluginExportCommandLineProcessor : CommandLineProcessor {
 
         val ARG_OUTPUT_DIR = CompilerConfigurationKey<File>(OPTION_OUTPUT_DIR)
         val ARG_TARGET_NAME = CompilerConfigurationKey<String>(OPTION_TARGET_NAME)
-        val ARG_SOURCE_SETS = CompilerConfigurationKey<List<String>>(OPTION_SOURCE_SETS)
+        val ARG_SOURCE_SETS = CompilerConfigurationKey<List<SourceSetTree>>(OPTION_SOURCE_SETS)
     }
 
     override val pluginId: String = "com.rnett.plugin-export-compiler-plugin"
@@ -44,7 +44,10 @@ class PluginExportCommandLineProcessor : CommandLineProcessor {
         return when (option.optionName) {
             OPTION_OUTPUT_DIR -> configuration.put(ARG_OUTPUT_DIR, File(value))
             OPTION_TARGET_NAME -> configuration.put(ARG_TARGET_NAME, value)
-            OPTION_SOURCE_SETS -> configuration.put(ARG_SOURCE_SETS, value.split("|"))
+            OPTION_SOURCE_SETS -> configuration.put(ARG_SOURCE_SETS, value.split("||").map {
+                val names = it.split("|")
+                SourceSetTree(names.first(), names.drop(1).toSet())
+            })
             else -> throw IllegalArgumentException("Unexpected config option ${option.optionName}")
         }
     }
@@ -53,9 +56,11 @@ class PluginExportCommandLineProcessor : CommandLineProcessor {
 @AutoService(ComponentRegistrar::class)
 class PluginExportComponentRegistrar : ComponentRegistrar {
     override fun registerProjectComponents(project: MockProject, configuration: CompilerConfiguration) {
-        val outputDir = configuration[PluginExportCommandLineProcessor.ARG_OUTPUT_DIR] ?: error("No option for output dir")
+        val outputDir =
+            configuration[PluginExportCommandLineProcessor.ARG_OUTPUT_DIR] ?: error("No option for output dir")
         val targetName = configuration[PluginExportCommandLineProcessor.ARG_TARGET_NAME]
-        val sourceSets = configuration[PluginExportCommandLineProcessor.ARG_SOURCE_SETS] ?: error("No option for source sets")
+        val sourceSets =
+            configuration[PluginExportCommandLineProcessor.ARG_SOURCE_SETS] ?: error("No option for source sets")
 
         IrGenerationExtension.registerExtension(
             project,
@@ -75,7 +80,7 @@ class PluginExportComponentRegistrar : ComponentRegistrar {
 class PluginExportIrGenerationExtension(
     val messageCollector: MessageCollector,
     val outputDir: File,
-    val sourceSets: List<String>,
+    val sourceSets: List<SourceSetTree>,
     val targetName: String?
 ) : IrGenerationExtension {
     init {

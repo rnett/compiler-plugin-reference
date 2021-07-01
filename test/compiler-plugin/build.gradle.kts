@@ -6,7 +6,7 @@ plugins {
 
 dependencies {
     implementation("com.rnett.compiler-plugin-reference:import")
-    implementation("org.jetbrains.kotlin:kotlin-compiler-embeddable:1.5.10")
+    implementation("org.jetbrains.kotlin:kotlin-compiler-embeddable:1.5.20")
 
     compileOnly("com.google.auto.service:auto-service-annotations:1.0-rc6")
     kapt("com.google.auto.service:auto-service:1.0-rc6")

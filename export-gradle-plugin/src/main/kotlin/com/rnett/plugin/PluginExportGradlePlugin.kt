@@ -5,8 +5,11 @@ import org.gradle.api.provider.Provider
 import org.jetbrains.kotlin.gradle.dsl.KotlinSingleTargetExtension
 import org.jetbrains.kotlin.gradle.plugin.KotlinCompilation
 import org.jetbrains.kotlin.gradle.plugin.KotlinCompilerPluginSupportPlugin
+import org.jetbrains.kotlin.gradle.plugin.KotlinSourceSet
 import org.jetbrains.kotlin.gradle.plugin.SubpluginArtifact
 import org.jetbrains.kotlin.gradle.plugin.SubpluginOption
+
+fun KotlinSourceSet.allDeps(): Set<KotlinSourceSet> = dependsOn + dependsOn.flatMap { it.allDeps() }.toSet()
 
 class PluginExportGradlePlugin : KotlinCompilerPluginSupportPlugin {
 
@@ -34,13 +37,21 @@ class PluginExportGradlePlugin : KotlinCompilerPluginSupportPlugin {
                 .withPropertyName("pluginExportDirOutput")
         }
 
+        val sourceSets = kotlinCompilation.allKotlinSourceSets
+
+        val sourceSetStr = sourceSets.joinToString("||") { set ->
+            val children = sourceSets.filter { set in it.allDeps() }
+            if (children.isNotEmpty())
+                set.name + "|" + children.joinToString("|") { it.name }
+            else
+                set.name
+        }
+
         return project.provider {
             listOfNotNull(
                 SubpluginOption("outputDir", exportDir.absolutePath),
                 targetName?.let { SubpluginOption("targetName", it) },
-                SubpluginOption("sourceSets", kotlinCompilation.allKotlinSourceSets.joinToString("|") {
-                    it.name
-                }),
+                SubpluginOption("sourceSets", sourceSetStr),
             )
         }
     }
@@ -60,5 +71,6 @@ class PluginExportGradlePlugin : KotlinCompilerPluginSupportPlugin {
     )
 
 
-    override fun isApplicable(kotlinCompilation: KotlinCompilation<*>): Boolean = kotlinCompilation.compilationName == "main"
+    override fun isApplicable(kotlinCompilation: KotlinCompilation<*>): Boolean =
+        kotlinCompilation.compilationName == "main"
 }
