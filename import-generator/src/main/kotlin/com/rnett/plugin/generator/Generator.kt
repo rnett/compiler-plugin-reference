@@ -54,7 +54,6 @@ object PluginImportGenerator {
         fileName: String,
         className: String = "Names"
     ) {
-        //TODO platform checks
         generate(baseDirectory, DeclarationTree(declarations), packageName, fileName, className)
     }
 

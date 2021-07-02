@@ -21,6 +21,11 @@ object References {
     val ResolvedEnumEntry = ClassName.bestGuess("com.rnett.plugin.ResolvedEnumEntry")
 
     val OpaqueAnnotationInstance = ClassName.bestGuess("com.rnett.plugin.OpaqueAnnotationInstance")
+    val OpaqueEnumEntry = ClassName.bestGuess("com.rnett.plugin.OpaqueEnumEntry")
+    val OpaqueClassRef = ClassName.bestGuess("com.rnett.plugin.OpaqueClassRef")
+    val OpaqueArray = ClassName.bestGuess("com.rnett.plugin.OpaqueArray")
+    val OpaqueConstant = ClassName.bestGuess("com.rnett.plugin.OpaqueConstant")
+
     val EnumInstance = ClassName.bestGuess("com.rnett.plugin.EnumInstance")
 
     val String = STRING
@@ -48,6 +53,9 @@ object References {
     val IrConstructorCall = ClassName.bestGuess("org.jetbrains.kotlin.ir.expressions.IrConstructorCall")
     val IrProperty = ClassName.bestGuess("org.jetbrains.kotlin.ir.declarations.IrProperty")
     val IrEnumEntry = ClassName.bestGuess("org.jetbrains.kotlin.ir.declarations.IrEnumEntry")
+    val IrConst = ClassName.bestGuess("org.jetbrains.kotlin.ir.expressions.IrConst")
+    val IrGetEnumValue = ClassName.bestGuess("org.jetbrains.kotlin.ir.expressions.IrGetEnumValue")
+    val IrClassReference = ClassName.bestGuess("org.jetbrains.kotlin.ir.expressions.IrClassReference")
 
     val IrStarProjectionImpl = ClassName.bestGuess("org.jetbrains.kotlin.ir.types.impl.IrStarProjectionImpl")
 
@@ -66,6 +74,14 @@ object References {
     val isNative = MemberName("org.jetbrains.kotlin.platform.konan", "isNative")
     val isJs = MemberName("org.jetbrains.kotlin.platform.js", "isJs")
     val isJvm = MemberName("org.jetbrains.kotlin.platform.jvm", "isJvm")
+
+    val cast = MemberName("org.jetbrains.kotlin.utils.addToStdlib", "cast")
+
+    val referenceEnumEntry = MemberName("com.rnett.plugin", "referenceEnumEntry")
+    val hasEqualFqName = MemberName("org.jetbrains.kotlin.ir.util", "hasEqualFqName")
+    val parentAsClass = MemberName("org.jetbrains.kotlin.ir.util", "parentAsClass")
+
+    val AnnotationArgument = MemberName("com.rnett.plugin", "AnnotationArgument")
 
     fun referenceType(declaration: ExportDeclaration): ClassName = when (declaration) {
         is ExportDeclaration.Class -> ClassReference

@@ -6,10 +6,10 @@ import kotlin.reflect.KClass
 //TODO better commonizer tests: expect class w/ additional methods on some platforms
 // nesting like class being native only, method on one native
 
-@PluginExport
-expect fun testExpectFun(): String
-
-expect fun testActualFun(): String
+//@PluginExport
+//expect fun testExpectFun(): String
+//
+//expect fun testActualFun(): String
 
 @PluginExport
 annotation class TestAnnotation(
@@ -35,8 +35,8 @@ enum class TestEnum {
     val testProp: String = "test"
 }
 
-@PluginExport
-fun testIsOne(t: TestEnum) = t == TestEnum.One
+//@PluginExport
+//fun testIsOne(t: TestEnum) = t == TestEnum.One
 
 @PluginExport
 const val testConst: String = "test"
@@ -52,33 +52,33 @@ class TestClass @PluginExport constructor(@PluginExport var n: Int) {
     }
 }
 
-@PluginExport
-class WithTypeParams<T : Number> @PluginExport constructor(val n: T) {
-}
-
-@PluginExport
-typealias TestTypealias = IllegalStateException
-
-@PluginExport
-typealias TestTypealiasWithArg<T> = List<T>
-
-@PluginExport
-fun <T> Int.testTopLevelFunction(req: T, opt: Double? = 2.0, vararg t: String): Int {
-    return 2
-}
-
-@PluginExport
-@PublishedApi
-internal fun testPublishedApi() {
-
-}
-
-@PluginExport
-@PublishedApi
-internal fun testPublishedApi(t: Int) {
-
-}
-
-@PluginExport
-val <T : Number> T.testPropWithTypeVar
-    get() = toInt()
+//@PluginExport
+//class WithTypeParams<T : Number> @PluginExport constructor(val n: T) {
+//}
+//
+//@PluginExport
+//typealias TestTypealias = IllegalStateException
+//
+//@PluginExport
+//typealias TestTypealiasWithArg<T> = List<T>
+//
+//@PluginExport
+//fun <T> Int.testTopLevelFunction(req: T, opt: Double? = 2.0, vararg t: String): Int {
+//    return 2
+//}
+//
+//@PluginExport
+//@PublishedApi
+//internal fun testPublishedApi() {
+//
+//}
+//
+//@PluginExport
+//@PublishedApi
+//internal fun testPublishedApi(t: Int) {
+//
+//}
+//
+//@PluginExport
+//val <T : Number> T.testPropWithTypeVar
+//    get() = toInt()

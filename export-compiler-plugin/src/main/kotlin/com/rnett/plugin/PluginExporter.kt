@@ -77,7 +77,11 @@ import org.jetbrains.kotlin.types.KotlinType
 import org.jetbrains.kotlin.types.Variance
 
 
-class PluginExporter(val context: IrPluginContext, val messageCollector: MessageCollector, val export: (ExportDeclaration) -> Unit) :
+class PluginExporter(
+    val context: IrPluginContext,
+    val messageCollector: MessageCollector,
+    val export: (ExportDeclaration) -> Unit
+) :
     IrElementTransformerVoidWithContext() {
 
     @OptIn(ObsoleteDescriptorBasedAPI::class)
@@ -92,11 +96,12 @@ class PluginExporter(val context: IrPluginContext, val messageCollector: Message
     @OptIn(ObsoleteDescriptorBasedAPI::class)
     private fun IrDeclarationWithVisibility.shouldExport(): Boolean {
         if (this.isActual) {
-            return hasAnnotation(Names.PluginExport) && descriptor.findExpects().none { it.annotations.hasAnnotation(Names.PluginExport) }
+            return hasAnnotation(Names.PluginExport) && descriptor.findExpects()
+                .none { it.annotations.hasAnnotation(Names.PluginExport) }
         }
 
-        if (this is IrMemberWithContainerSource && this.parentClassOrNull?.isAnnotationClass == true) {
-            return false
+        if (this is IrMemberWithContainerSource && this.parentClassOrNull?.isAnnotationClass == true && this.parentAsClass.shouldExport()) {
+            return this is IrProperty
         }
 
         return hasAnnotation(Names.PluginExport)
@@ -127,7 +132,8 @@ class PluginExporter(val context: IrPluginContext, val messageCollector: Message
 
     fun IdSignature.PublicSignature.toSignature() = Signature(packageFqName, declarationFqName, id, mask)
 
-    private val IrDeclaration.publicSignature get() = symbol.signature?.asPublic()?.toSignature() ?: error("No public signature")
+    private val IrDeclaration.publicSignature
+        get() = symbol.signature?.asPublic()?.toSignature() ?: error("No public signature")
 
     val IrDeclarationParent.resolvedName get() = kotlinFqName.toResolvedName()
 
@@ -196,12 +202,18 @@ class PluginExporter(val context: IrPluginContext, val messageCollector: Message
 
     fun IrValueParameter.toReceiver() = ExportDeclaration.Receiver(type.typeNic, type.toTypeString())
 
-    fun IrValueParameter.toParameter() = ExportDeclaration.Param(name.asString(), index, hasDefaultValue(), isVararg, type.toTypeString())
+    fun IrValueParameter.toParameter() =
+        ExportDeclaration.Param(name.asString(), index, hasDefaultValue(), isVararg, type.toTypeString())
 
-    fun ReceiverParameterDescriptor.toReceiver() = type.toIrType().let { ExportDeclaration.Receiver(it.typeNic, it.toTypeString()) }
+    fun ReceiverParameterDescriptor.toReceiver() =
+        type.toIrType().let { ExportDeclaration.Receiver(it.typeNic, it.toTypeString()) }
 
     fun TypeParameterDescriptor.toTypeParameter() =
-        ExportDeclaration.TypeParameter(name.asString(), index, variance.toVariance(), this.upperBounds.map { it.toIrType().toTypeString() })
+        ExportDeclaration.TypeParameter(
+            name.asString(),
+            index,
+            variance.toVariance(),
+            this.upperBounds.map { it.toIrType().toTypeString() })
 
     @OptIn(ObsoleteDescriptorBasedAPI::class)
     fun KotlinType.toIrType() = context.typeTranslator.translateType(this)
@@ -291,7 +303,11 @@ class PluginExporter(val context: IrPluginContext, val messageCollector: Message
             val constructor = primaryConstructor!!
             constructor.valueParameters.associate {
                 val defaultValue = it.defaultValue?.expression
-                it.name.asString() to defaultValue?.toAnnotationArgument()
+                it.name.asString() to AnnotationParameter(
+                    it.index,
+                    it.type.annotationValueKind(),
+                    defaultValue?.toAnnotationArgument()
+                )
             }
         } else null
 

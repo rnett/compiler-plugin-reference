@@ -15,7 +15,6 @@ import com.squareup.kotlinpoet.TypeSpec
 import com.squareup.kotlinpoet.asTypeName
 
 internal object ResolvedBuilder {
-    //TODO add platform checks in the platform split's init blocks
     fun build(
         builder: TypeSpec.Builder,
         namesBuilder: TypeSpec.Builder,
@@ -116,7 +115,7 @@ internal object ResolvedBuilder {
 
         addKdoc(kdoc.build())
 
-        val (types, builders) = InstanceBuilder.buildInstance(current, declaration)
+        val (types, builders) = InstanceBuilder.buildInstance(current, declaration, nameLookup)
         namesBuilder.addFunctions(builders)
         addTypes(types)
     }

@@ -20,9 +20,13 @@ object InstanceBuilder {
     const val name: String = "Instance"
     fun instanceBuilder() = TypeSpec.classBuilder(name)
 
-    fun buildInstance(className: ClassName, declaration: ExportDeclaration): Pair<List<TypeSpec>, List<FunSpec>> {
+    internal fun buildInstance(
+        className: ClassName,
+        declaration: ExportDeclaration,
+        nameLookup: FqNameLookup
+    ): Pair<List<TypeSpec>, List<FunSpec>> {
         val (type, functions) = when (declaration) {
-            is ExportDeclaration.Class -> declaration.buildClassInstance(className)
+            is ExportDeclaration.Class -> declaration.buildClassInstance(className, nameLookup)
             is ExportDeclaration.Constructor -> declaration.buildConstructorInstance(className)
             is ExportDeclaration.Function -> declaration.buildFunctionInstance(className)
             is ExportDeclaration.Property -> declaration.buildPropertyInstance(className)
@@ -45,13 +49,19 @@ object InstanceBuilder {
                 .addStatement("val signature = %L", signature)
                 .addStatement("val requiredSignature = %T.signature", className)
                 .beginControlFlow("require(signature == requiredSignature)")
-                .addStatement("%P", "Instance's signature \$signature did not match the required signature of \$requiredSignature")
+                .addStatement(
+                    "%P",
+                    "Instance's signature \$signature did not match the required signature of \$requiredSignature"
+                )
                 .endControlFlow()
                 .build()
         )
     }
 
-    private fun ExportDeclaration.Class.buildClassInstance(className: ClassName): TypeAndFuncs {
+    private fun ExportDeclaration.Class.buildClassInstance(
+        className: ClassName,
+        nameLookup: FqNameLookup
+    ): TypeAndFuncs {
         enumNames?.let { enumNames ->
             val instanceType = className.nestedClass("Instance")
             val referenceType = References.EnumEntryReference.parameterizedBy(instanceType)
@@ -87,9 +97,64 @@ object InstanceBuilder {
                 }
             }
 
-            return instanceBuilder.build() to emptyList()
+            val ctor = FunSpec.builder("instance").apply {
+                addParameter("symbol", References.IrEnumEntrySymbol)
+                returns(instanceType)
+                beginControlFlow(
+                    "require(symbol.owner.%M.%M(fqName))",
+                    References.parentAsClass,
+                    References.hasEqualFqName
+                )
+                addStatement("%P", "Enum symbol \$symbol is not an entry of \$fqName")
+                endControlFlow()
+                addStatement("return %T.valueOf(symbol.owner.name.asString())", instanceType)
+            }.build()
 
+
+            val ctor2 = FunSpec.builder("instance").apply {
+                addParameter("get", References.IrGetEnumValue)
+                returns(instanceType)
+                addStatement("return instance(get.symbol)")
+            }.build()
+
+
+            return instanceBuilder.build() to listOf(ctor, ctor2)
         }
+
+        if (this.isAnnotation) {
+            val instanceType = className.nestedClass("Instance")
+            val builder = TypeSpec.classBuilder("Instance")
+
+            val ctor = FunSpec.constructorBuilder()
+            val secondary = FunSpec.constructorBuilder()
+                .addParameter("annotation", References.IrConstructorCall)
+                .addParameter("context", References.IrPluginContext)
+
+            annotationProperties!!.forEach {
+                //TODO pass platform
+                val type = it.value.kind.valueType(nameLookup::getClassNameForFqName)
+                ctor.addParameter(it.key, type)
+                builder.addProperty(
+                    PropertySpec.builder(it.key, type)
+                        .initializer(it.key)
+                        .build()
+                )
+            }
+
+            secondary.callThisConstructor(annotationProperties!!.map {
+                CodeBlock.of(
+                    "%L = %L\n",
+                    it.key,
+                    it.value.value("context", "annotation", nameLookup::getClassNameForFqName)
+                )
+            })
+
+            builder.primaryConstructor(ctor.build())
+            builder.addFunction(secondary.build())
+
+            return builder.build() to emptyList()
+        }
+
         return null
     }
 
@@ -125,7 +190,9 @@ object InstanceBuilder {
     private fun ExportDeclaration.Constructor.buildConstructorInstance(className: ClassName): TypeAndFuncs {
         val builder = instanceBuilder()
 
-        builder.primaryConstructor(FunSpec.constructorBuilder().addParameter("call", References.IrConstructorCall).build())
+        builder.primaryConstructor(
+            FunSpec.constructorBuilder().addParameter("call", References.IrConstructorCall).build()
+        )
         builder.addProperty(PropertySpec.builder("call", References.IrConstructorCall).initializer("call").build())
         val getSignature = CodeBlock.of("call.symbol.signature")
 
@@ -134,7 +201,13 @@ object InstanceBuilder {
         builder.addTypeParameters(classTypeParams)
         builder.addValueParameters(valueParameters)
 
-        return builder.build() to builderMethods("instance", "call", References.IrConstructorCall, className, getSignature)
+        return builder.build() to builderMethods(
+            "instance",
+            "call",
+            References.IrConstructorCall,
+            className,
+            getSignature
+        )
     }
 
     private fun ExportDeclaration.Function.buildFunctionInstance(className: ClassName): TypeAndFuncs {
@@ -188,7 +261,10 @@ object InstanceBuilder {
             addInitializerBlock(
                 CodeBlock.builder()
                     .beginControlFlow("require(call.symbol.owner.%M)", isRightAccessor)
-                    .addStatement("%P", "Instance \${call.symbol} is not the right type of accessor, expected a $rightAccessorName")
+                    .addStatement(
+                        "%P",
+                        "Instance \${call.symbol} is not the right type of accessor, expected a $rightAccessorName"
+                    )
                     .endControlFlow()
                     .build()
             )
@@ -266,7 +342,10 @@ object InstanceBuilder {
         }
     }
 
-    private fun TypeSpec.Builder.addReceivers(dispatchReceiver: ExportDeclaration.Receiver?, extensionReceivers: List<ExportDeclaration.Receiver>) {
+    private fun TypeSpec.Builder.addReceivers(
+        dispatchReceiver: ExportDeclaration.Receiver?,
+        extensionReceivers: List<ExportDeclaration.Receiver>
+    ) {
         dispatchReceiver?.let {
             addProperty(
                 PropertySpec.builder("dispatchReceiver", References.IrExpression.copy(nullable = true))

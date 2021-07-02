@@ -130,9 +130,11 @@ sealed class ExportDeclaration {
         override val signature: Signature,
         val typeParameters: List<TypeParameter>,
         val enumNames: List<Pair<String, Signature>>?,
-        val annotationProperties: Map<String, AnnotationArgument?>?,
+        val annotationProperties: Map<String, AnnotationParameter>?,
         override val customName: String? = null
-    ) : ExportDeclaration()
+    ) : ExportDeclaration() {
+        val isAnnotation get() = annotationProperties != null
+    }
 
     @Serializable
     data class Property(

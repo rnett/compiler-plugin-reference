@@ -5,47 +5,43 @@ import com.rnett.plugin.ClassReference
 import com.rnett.plugin.ConstructorReference
 import com.rnett.plugin.EnumEntryReference
 import com.rnett.plugin.EnumInstance
-import com.rnett.plugin.FunctionReference
+import com.rnett.plugin.OpaqueAnnotationInstance
+import com.rnett.plugin.OpaqueConstant
 import com.rnett.plugin.PropertyReference
 import com.rnett.plugin.ResolvedClass
 import com.rnett.plugin.ResolvedConstructor
 import com.rnett.plugin.ResolvedEnumEntry
-import com.rnett.plugin.ResolvedFunction
 import com.rnett.plugin.ResolvedProperty
-import com.rnett.plugin.ResolvedTypealias
-import com.rnett.plugin.TypealiasReference
+import com.rnett.plugin.referenceEnumEntry
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.ir.builders.IrBuilderWithScope
 import org.jetbrains.kotlin.ir.builders.irCall
 import org.jetbrains.kotlin.ir.builders.irCallConstructor
-import org.jetbrains.kotlin.ir.builders.irVararg
 import org.jetbrains.kotlin.ir.declarations.IrProperty
 import org.jetbrains.kotlin.ir.expressions.IrCall
+import org.jetbrains.kotlin.ir.expressions.IrClassReference
+import org.jetbrains.kotlin.ir.expressions.IrConst
 import org.jetbrains.kotlin.ir.expressions.IrConstructorCall
 import org.jetbrains.kotlin.ir.expressions.IrExpression
+import org.jetbrains.kotlin.ir.expressions.IrGetEnumValue
 import org.jetbrains.kotlin.ir.symbols.IrClassSymbol
 import org.jetbrains.kotlin.ir.symbols.IrConstructorSymbol
+import org.jetbrains.kotlin.ir.symbols.IrEnumEntrySymbol
 import org.jetbrains.kotlin.ir.symbols.IrFieldSymbol
 import org.jetbrains.kotlin.ir.symbols.IrPropertySymbol
 import org.jetbrains.kotlin.ir.symbols.IrSimpleFunctionSymbol
-import org.jetbrains.kotlin.ir.symbols.IrTypeAliasSymbol
 import org.jetbrains.kotlin.ir.types.IrSimpleType
 import org.jetbrains.kotlin.ir.types.IrType
-import org.jetbrains.kotlin.ir.types.IrTypeArgument
-import org.jetbrains.kotlin.ir.types.impl.IrStarProjectionImpl
 import org.jetbrains.kotlin.ir.types.typeWith
-import org.jetbrains.kotlin.ir.types.typeWithArguments
 import org.jetbrains.kotlin.ir.util.IdSignature
-import org.jetbrains.kotlin.ir.util.constructedClass
 import org.jetbrains.kotlin.ir.util.constructedClassType
+import org.jetbrains.kotlin.ir.util.hasEqualFqName
 import org.jetbrains.kotlin.ir.util.isGetter
 import org.jetbrains.kotlin.ir.util.isSetter
-import org.jetbrains.kotlin.ir.util.substitute
-import org.jetbrains.kotlin.ir.util.typeSubstitutionMap
+import org.jetbrains.kotlin.ir.util.parentAsClass
 import org.jetbrains.kotlin.name.FqName
-import org.jetbrains.kotlin.platform.js.isJs
-import org.jetbrains.kotlin.platform.jvm.isJvm
-import org.jetbrains.kotlin.platform.konan.isNative
+import org.jetbrains.kotlin.name.Name
+import org.jetbrains.kotlin.utils.addToStdlib.cast
 import test.generation.Names.tester.second.TestEnum.Instance
 
 public class Names(
@@ -69,31 +65,7 @@ public class Names(
 
             public fun TestEnum(): TestEnum = TestEnum(_context)
 
-            public fun TestTypealias(): TestTypealias = TestTypealias(_context)
-
-            public fun TestTypealiasWithArg(): TestTypealiasWithArg = TestTypealiasWithArg(_context)
-
-            public fun WithTypeParams(): WithTypeParams = WithTypeParams(_context)
-
-            public fun jsMain(): jsMain = jsMain(_context)
-
-            public fun jvmMain(): jvmMain = jvmMain(_context)
-
-            public fun nativeMain(): nativeMain = nativeMain(_context)
-
             public fun testConst(): testConst = testConst(_context)
-
-            public fun testExpectFun(): testExpectFun = testExpectFun(_context)
-
-            public fun testIsOne(): testIsOne = testIsOne(_context)
-
-            public fun testPropWithTypeVar(): testPropWithTypeVar = testPropWithTypeVar(_context)
-
-            public fun testPublishedApi(): testPublishedApi = testPublishedApi(_context)
-
-            public fun testPublishedApi_1(): testPublishedApi_1 = testPublishedApi_1(_context)
-
-            public fun testTopLevelFunction(): testTopLevelFunction = testTopLevelFunction(_context)
 
             /**
              * Resolved reference to `tester.second.ExportedAnnotation`
@@ -110,11 +82,137 @@ public class Names(
 
                 public constructor(context: IrPluginContext) : this(context, resolveSymbol(context))
 
+                public fun i(): i = i(_context)
+
+                public class Instance(
+                    public val i: Int
+                ) {
+                    public constructor(`annotation`: IrConstructorCall, context: IrPluginContext) :
+                            this(i = annotation.getValueArgument(0)!!.cast<IrConst<Int>>().let {
+                                it.value
+                            }
+                            )
+                }
+
+                /**
+                 * Resolved reference to `tester.second.ExportedAnnotation.i`
+                 *
+                 * Dispatch receiver: `tester.second.ExportedAnnotation`
+                 *
+                 * Type: `kotlin.Int`
+                 */
+                public class i private constructor(
+                    private val _context: IrPluginContext,
+                    symbol: IrPropertySymbol
+                ) : ResolvedProperty(symbol, fqName) {
+                    /**
+                     * Get the property's type.
+                     */
+                    public val type: IrType = (owner.getter?.returnType ?: owner.backingField?.type)!!
+
+                    /**
+                     * The getter
+                     */
+                    public val getter: IrSimpleFunctionSymbol = owner.getter!!.symbol
+
+                    /**
+                     * The backing field
+                     */
+                    public val backingField: IrFieldSymbol = owner.backingField!!.symbol
+
+                    public constructor(context: IrPluginContext) : this(
+                        context,
+                        resolveSymbol(context)
+                    )
+
+                    /**
+                     * Call the getter
+                     *
+                     * @param dispatchReceiver `tester.second.ExportedAnnotation`
+                     * @return `kotlin.Int`
+                     */
+                    public fun `get`(builder: IrBuilderWithScope, dispatchReceiver: IrExpression):
+                            IrCall = builder.irCall(getter).apply {
+                        this.dispatchReceiver = dispatchReceiver
+                        type = getter.owner.returnType
+                    }
+
+
+                    public open class Instance(
+                        public val call: IrCall
+                    ) {
+                        init {
+                            val signature = call.symbol.owner.correspondingPropertySymbol?.signature
+                            val requiredSignature = i.signature
+                            require(signature == requiredSignature) {
+                                """Instance's signature $signature did not match the required signature of $requiredSignature"""
+                            }
+                        }
+
+                        public val dispatchReceiver: IrExpression?
+                            get() = call.dispatchReceiver
+
+                        public val `property`: IrProperty
+                            get() = call.symbol.owner.correspondingPropertySymbol!!.owner
+                    }
+
+                    public class GetterInstance(
+                        call: IrCall
+                    ) : Instance(call) {
+                        init {
+                            require(call.symbol.owner.isGetter) {
+                                """Instance ${call.symbol} is not the right type of accessor, expected a getter"""
+                            }
+                        }
+                    }
+
+                    public companion object Reference :
+                        PropertyReference<i>(
+                            FqName("tester.second.ExportedAnnotation.i"),
+                            IdSignature.PublicSignature(
+                                "tester.second", "ExportedAnnotation.i",
+                                5014384761142332495, 0
+                            )
+                        ) {
+                        public override fun getResolvedReference(
+                            context: IrPluginContext,
+                            symbol: IrPropertySymbol
+                        ): i = i(context, symbol)
+
+                        public fun accessorInstance(call: IrCall): Instance = Instance(call)
+
+                        public fun accessorInstanceOrNull(call: IrCall): Instance? {
+                            if (call.symbol.owner.correspondingPropertySymbol?.signature ==
+                                i.signature
+                            ) {
+                                return Instance(call)
+                            } else {
+                                return null
+                            }
+                        }
+
+                        public fun getterInstance(call: IrCall): GetterInstance =
+                            GetterInstance(call)
+
+                        public fun getterInstanceOrNull(call: IrCall): GetterInstance? {
+                            if (call.symbol.owner.correspondingPropertySymbol?.signature ==
+                                i.signature && call.symbol.owner.isGetter
+                            ) {
+                                return GetterInstance(call)
+                            } else {
+                                return null
+                            }
+                        }
+                    }
+                }
+
                 public companion object Reference :
                     ClassReference<ExportedAnnotation>(
                         FqName("tester.second.ExportedAnnotation"),
                         IdSignature.PublicSignature("tester.second", "ExportedAnnotation", null, 0)
                     ) {
+                    public val i: i.Reference = ExportedAnnotation.i.Reference
+
                     public override fun getResolvedReference(
                         context: IrPluginContext,
                         symbol: IrClassSymbol
@@ -140,11 +238,862 @@ public class Names(
 
                 public constructor(context: IrPluginContext) : this(context, resolveSymbol(context))
 
+                public fun a(): a = a(_context)
+
+                public fun c(): c = c(_context)
+
+                public fun e(): e = e(_context)
+
+                public fun n(): n = n(_context)
+
+                public fun r(): r = r(_context)
+
+                public fun s(): s = s(_context)
+
+                public fun t(): t = t(_context)
+
+                public class Instance(
+                    public val t: Int,
+                    public val s: String,
+                    public val e: IrEnumEntrySymbol,
+                    public val c: IrClassSymbol,
+                    public val r: ExportedAnnotation.Instance,
+                    public val n: OpaqueAnnotationInstance,
+                    public val a: List<Int>
+                ) {
+                    public constructor(`annotation`: IrConstructorCall, context: IrPluginContext) :
+                            this(t = annotation.getValueArgument(0)?.cast<IrConst<Int>>()?.let {
+                                it.value
+                            } ?: 2,
+                                s = annotation.getValueArgument(1)?.cast<IrConst<String>>()?.let { it.value }
+                                    ?: "test",
+                                e = annotation.getValueArgument(2)?.cast<IrGetEnumValue>()?.let { it.symbol }
+                                    ?: context.referenceEnumEntry(
+                                        FqName("tester.second.TestEnum"),
+                                        Name.identifier("Two")
+                                    )!!,
+                                c = annotation.getValueArgument(3)?.cast<IrClassReference>()?.let {
+                                    it.symbol
+                                            as IrClassSymbol
+                                } ?: context.referenceClass(FqName("tester.second.TestClass"))!!,
+                                r = annotation.getValueArgument(4)?.cast<IrConstructorCall>()?.let {
+                                    ExportedAnnotation.Instance(it, context)
+                                } ?: ExportedAnnotation.Instance(i = 2),
+                                n = annotation.getValueArgument(5)?.cast<IrConstructorCall>()?.let {
+                                    OpaqueAnnotationInstance(it)
+                                } ?: OpaqueAnnotationInstance(
+                                    FqName("tester.second.NonExported"), mapOf(
+                                        "s"
+                                                to OpaqueConstant("test")
+                                    )
+                                ),
+                                a = TODO()
+                            )
+                }
+
+                /**
+                 * Resolved reference to `tester.second.TestAnnotation.a`
+                 *
+                 * Dispatch receiver: `tester.second.TestAnnotation`
+                 *
+                 * Type: `kotlin.IntArray`
+                 */
+                public class a private constructor(
+                    private val _context: IrPluginContext,
+                    symbol: IrPropertySymbol
+                ) : ResolvedProperty(symbol, fqName) {
+                    /**
+                     * Get the property's type.
+                     */
+                    public val type: IrType = (owner.getter?.returnType ?: owner.backingField?.type)!!
+
+                    /**
+                     * The getter
+                     */
+                    public val getter: IrSimpleFunctionSymbol = owner.getter!!.symbol
+
+                    /**
+                     * The backing field
+                     */
+                    public val backingField: IrFieldSymbol = owner.backingField!!.symbol
+
+                    public constructor(context: IrPluginContext) : this(
+                        context,
+                        resolveSymbol(context)
+                    )
+
+                    /**
+                     * Call the getter
+                     *
+                     * @param dispatchReceiver `tester.second.TestAnnotation`
+                     * @return `kotlin.IntArray`
+                     */
+                    public fun `get`(builder: IrBuilderWithScope, dispatchReceiver: IrExpression):
+                            IrCall = builder.irCall(getter).apply {
+                        this.dispatchReceiver = dispatchReceiver
+                        type = getter.owner.returnType
+                    }
+
+
+                    public open class Instance(
+                        public val call: IrCall
+                    ) {
+                        init {
+                            val signature = call.symbol.owner.correspondingPropertySymbol?.signature
+                            val requiredSignature = a.signature
+                            require(signature == requiredSignature) {
+                                """Instance's signature $signature did not match the required signature of $requiredSignature"""
+                            }
+                        }
+
+                        public val dispatchReceiver: IrExpression?
+                            get() = call.dispatchReceiver
+
+                        public val `property`: IrProperty
+                            get() = call.symbol.owner.correspondingPropertySymbol!!.owner
+                    }
+
+                    public class GetterInstance(
+                        call: IrCall
+                    ) : Instance(call) {
+                        init {
+                            require(call.symbol.owner.isGetter) {
+                                """Instance ${call.symbol} is not the right type of accessor, expected a getter"""
+                            }
+                        }
+                    }
+
+                    public companion object Reference :
+                        PropertyReference<a>(
+                            FqName("tester.second.TestAnnotation.a"),
+                            IdSignature.PublicSignature(
+                                "tester.second",
+                                "TestAnnotation.a", -1200697420457237799, 0
+                            )
+                        ) {
+                        public override fun getResolvedReference(
+                            context: IrPluginContext,
+                            symbol: IrPropertySymbol
+                        ): a = a(context, symbol)
+
+                        public fun accessorInstance(call: IrCall): Instance = Instance(call)
+
+                        public fun accessorInstanceOrNull(call: IrCall): Instance? {
+                            if (call.symbol.owner.correspondingPropertySymbol?.signature ==
+                                a.signature
+                            ) {
+                                return Instance(call)
+                            } else {
+                                return null
+                            }
+                        }
+
+                        public fun getterInstance(call: IrCall): GetterInstance =
+                            GetterInstance(call)
+
+                        public fun getterInstanceOrNull(call: IrCall): GetterInstance? {
+                            if (call.symbol.owner.correspondingPropertySymbol?.signature ==
+                                a.signature && call.symbol.owner.isGetter
+                            ) {
+                                return GetterInstance(call)
+                            } else {
+                                return null
+                            }
+                        }
+                    }
+                }
+
+                /**
+                 * Resolved reference to `tester.second.TestAnnotation.c`
+                 *
+                 * Dispatch receiver: `tester.second.TestAnnotation`
+                 *
+                 * Type: `kotlin.reflect.KClass<*>`
+                 */
+                public class c private constructor(
+                    private val _context: IrPluginContext,
+                    symbol: IrPropertySymbol
+                ) : ResolvedProperty(symbol, fqName) {
+                    /**
+                     * Get the property's type.
+                     */
+                    public val type: IrType = (owner.getter?.returnType ?: owner.backingField?.type)!!
+
+                    /**
+                     * The getter
+                     */
+                    public val getter: IrSimpleFunctionSymbol = owner.getter!!.symbol
+
+                    /**
+                     * The backing field
+                     */
+                    public val backingField: IrFieldSymbol = owner.backingField!!.symbol
+
+                    public constructor(context: IrPluginContext) : this(
+                        context,
+                        resolveSymbol(context)
+                    )
+
+                    /**
+                     * Call the getter
+                     *
+                     * @param dispatchReceiver `tester.second.TestAnnotation`
+                     * @return `kotlin.reflect.KClass<*>`
+                     */
+                    public fun `get`(builder: IrBuilderWithScope, dispatchReceiver: IrExpression):
+                            IrCall = builder.irCall(getter).apply {
+                        this.dispatchReceiver = dispatchReceiver
+                        type = getter.owner.returnType
+                    }
+
+
+                    public open class Instance(
+                        public val call: IrCall
+                    ) {
+                        init {
+                            val signature = call.symbol.owner.correspondingPropertySymbol?.signature
+                            val requiredSignature = c.signature
+                            require(signature == requiredSignature) {
+                                """Instance's signature $signature did not match the required signature of $requiredSignature"""
+                            }
+                        }
+
+                        public val dispatchReceiver: IrExpression?
+                            get() = call.dispatchReceiver
+
+                        public val `property`: IrProperty
+                            get() = call.symbol.owner.correspondingPropertySymbol!!.owner
+                    }
+
+                    public class GetterInstance(
+                        call: IrCall
+                    ) : Instance(call) {
+                        init {
+                            require(call.symbol.owner.isGetter) {
+                                """Instance ${call.symbol} is not the right type of accessor, expected a getter"""
+                            }
+                        }
+                    }
+
+                    public companion object Reference :
+                        PropertyReference<c>(
+                            FqName("tester.second.TestAnnotation.c"),
+                            IdSignature.PublicSignature(
+                                "tester.second",
+                                "TestAnnotation.c", -4416962153448040627, 0
+                            )
+                        ) {
+                        public override fun getResolvedReference(
+                            context: IrPluginContext,
+                            symbol: IrPropertySymbol
+                        ): c = c(context, symbol)
+
+                        public fun accessorInstance(call: IrCall): Instance = Instance(call)
+
+                        public fun accessorInstanceOrNull(call: IrCall): Instance? {
+                            if (call.symbol.owner.correspondingPropertySymbol?.signature ==
+                                c.signature
+                            ) {
+                                return Instance(call)
+                            } else {
+                                return null
+                            }
+                        }
+
+                        public fun getterInstance(call: IrCall): GetterInstance =
+                            GetterInstance(call)
+
+                        public fun getterInstanceOrNull(call: IrCall): GetterInstance? {
+                            if (call.symbol.owner.correspondingPropertySymbol?.signature ==
+                                c.signature && call.symbol.owner.isGetter
+                            ) {
+                                return GetterInstance(call)
+                            } else {
+                                return null
+                            }
+                        }
+                    }
+                }
+
+                /**
+                 * Resolved reference to `tester.second.TestAnnotation.e`
+                 *
+                 * Dispatch receiver: `tester.second.TestAnnotation`
+                 *
+                 * Type: `tester.second.TestEnum`
+                 */
+                public class e private constructor(
+                    private val _context: IrPluginContext,
+                    symbol: IrPropertySymbol
+                ) : ResolvedProperty(symbol, fqName) {
+                    /**
+                     * Get the property's type.
+                     */
+                    public val type: IrType = (owner.getter?.returnType ?: owner.backingField?.type)!!
+
+                    /**
+                     * The getter
+                     */
+                    public val getter: IrSimpleFunctionSymbol = owner.getter!!.symbol
+
+                    /**
+                     * The backing field
+                     */
+                    public val backingField: IrFieldSymbol = owner.backingField!!.symbol
+
+                    public constructor(context: IrPluginContext) : this(
+                        context,
+                        resolveSymbol(context)
+                    )
+
+                    /**
+                     * Call the getter
+                     *
+                     * @param dispatchReceiver `tester.second.TestAnnotation`
+                     * @return `tester.second.TestEnum`
+                     */
+                    public fun `get`(builder: IrBuilderWithScope, dispatchReceiver: IrExpression):
+                            IrCall = builder.irCall(getter).apply {
+                        this.dispatchReceiver = dispatchReceiver
+                        type = getter.owner.returnType
+                    }
+
+
+                    public open class Instance(
+                        public val call: IrCall
+                    ) {
+                        init {
+                            val signature = call.symbol.owner.correspondingPropertySymbol?.signature
+                            val requiredSignature = e.signature
+                            require(signature == requiredSignature) {
+                                """Instance's signature $signature did not match the required signature of $requiredSignature"""
+                            }
+                        }
+
+                        public val dispatchReceiver: IrExpression?
+                            get() = call.dispatchReceiver
+
+                        public val `property`: IrProperty
+                            get() = call.symbol.owner.correspondingPropertySymbol!!.owner
+                    }
+
+                    public class GetterInstance(
+                        call: IrCall
+                    ) : Instance(call) {
+                        init {
+                            require(call.symbol.owner.isGetter) {
+                                """Instance ${call.symbol} is not the right type of accessor, expected a getter"""
+                            }
+                        }
+                    }
+
+                    public companion object Reference :
+                        PropertyReference<e>(
+                            FqName("tester.second.TestAnnotation.e"),
+                            IdSignature.PublicSignature(
+                                "tester.second",
+                                "TestAnnotation.e", -5812214850253973038, 0
+                            )
+                        ) {
+                        public override fun getResolvedReference(
+                            context: IrPluginContext,
+                            symbol: IrPropertySymbol
+                        ): e = e(context, symbol)
+
+                        public fun accessorInstance(call: IrCall): Instance = Instance(call)
+
+                        public fun accessorInstanceOrNull(call: IrCall): Instance? {
+                            if (call.symbol.owner.correspondingPropertySymbol?.signature ==
+                                e.signature
+                            ) {
+                                return Instance(call)
+                            } else {
+                                return null
+                            }
+                        }
+
+                        public fun getterInstance(call: IrCall): GetterInstance =
+                            GetterInstance(call)
+
+                        public fun getterInstanceOrNull(call: IrCall): GetterInstance? {
+                            if (call.symbol.owner.correspondingPropertySymbol?.signature ==
+                                e.signature && call.symbol.owner.isGetter
+                            ) {
+                                return GetterInstance(call)
+                            } else {
+                                return null
+                            }
+                        }
+                    }
+                }
+
+                /**
+                 * Resolved reference to `tester.second.TestAnnotation.n`
+                 *
+                 * Dispatch receiver: `tester.second.TestAnnotation`
+                 *
+                 * Type: `tester.second.NonExported`
+                 */
+                public class n private constructor(
+                    private val _context: IrPluginContext,
+                    symbol: IrPropertySymbol
+                ) : ResolvedProperty(symbol, fqName) {
+                    /**
+                     * Get the property's type.
+                     */
+                    public val type: IrType = (owner.getter?.returnType ?: owner.backingField?.type)!!
+
+                    /**
+                     * The getter
+                     */
+                    public val getter: IrSimpleFunctionSymbol = owner.getter!!.symbol
+
+                    /**
+                     * The backing field
+                     */
+                    public val backingField: IrFieldSymbol = owner.backingField!!.symbol
+
+                    public constructor(context: IrPluginContext) : this(
+                        context,
+                        resolveSymbol(context)
+                    )
+
+                    /**
+                     * Call the getter
+                     *
+                     * @param dispatchReceiver `tester.second.TestAnnotation`
+                     * @return `tester.second.NonExported`
+                     */
+                    public fun `get`(builder: IrBuilderWithScope, dispatchReceiver: IrExpression):
+                            IrCall = builder.irCall(getter).apply {
+                        this.dispatchReceiver = dispatchReceiver
+                        type = getter.owner.returnType
+                    }
+
+
+                    public open class Instance(
+                        public val call: IrCall
+                    ) {
+                        init {
+                            val signature = call.symbol.owner.correspondingPropertySymbol?.signature
+                            val requiredSignature = n.signature
+                            require(signature == requiredSignature) {
+                                """Instance's signature $signature did not match the required signature of $requiredSignature"""
+                            }
+                        }
+
+                        public val dispatchReceiver: IrExpression?
+                            get() = call.dispatchReceiver
+
+                        public val `property`: IrProperty
+                            get() = call.symbol.owner.correspondingPropertySymbol!!.owner
+                    }
+
+                    public class GetterInstance(
+                        call: IrCall
+                    ) : Instance(call) {
+                        init {
+                            require(call.symbol.owner.isGetter) {
+                                """Instance ${call.symbol} is not the right type of accessor, expected a getter"""
+                            }
+                        }
+                    }
+
+                    public companion object Reference :
+                        PropertyReference<n>(
+                            FqName("tester.second.TestAnnotation.n"),
+                            IdSignature.PublicSignature(
+                                "tester.second",
+                                "TestAnnotation.n", -1061662854873377138, 0
+                            )
+                        ) {
+                        public override fun getResolvedReference(
+                            context: IrPluginContext,
+                            symbol: IrPropertySymbol
+                        ): n = n(context, symbol)
+
+                        public fun accessorInstance(call: IrCall): Instance = Instance(call)
+
+                        public fun accessorInstanceOrNull(call: IrCall): Instance? {
+                            if (call.symbol.owner.correspondingPropertySymbol?.signature ==
+                                n.signature
+                            ) {
+                                return Instance(call)
+                            } else {
+                                return null
+                            }
+                        }
+
+                        public fun getterInstance(call: IrCall): GetterInstance =
+                            GetterInstance(call)
+
+                        public fun getterInstanceOrNull(call: IrCall): GetterInstance? {
+                            if (call.symbol.owner.correspondingPropertySymbol?.signature ==
+                                n.signature && call.symbol.owner.isGetter
+                            ) {
+                                return GetterInstance(call)
+                            } else {
+                                return null
+                            }
+                        }
+                    }
+                }
+
+                /**
+                 * Resolved reference to `tester.second.TestAnnotation.r`
+                 *
+                 * Dispatch receiver: `tester.second.TestAnnotation`
+                 *
+                 * Type: `tester.second.ExportedAnnotation`
+                 */
+                public class r private constructor(
+                    private val _context: IrPluginContext,
+                    symbol: IrPropertySymbol
+                ) : ResolvedProperty(symbol, fqName) {
+                    /**
+                     * Get the property's type.
+                     */
+                    public val type: IrType = (owner.getter?.returnType ?: owner.backingField?.type)!!
+
+                    /**
+                     * The getter
+                     */
+                    public val getter: IrSimpleFunctionSymbol = owner.getter!!.symbol
+
+                    /**
+                     * The backing field
+                     */
+                    public val backingField: IrFieldSymbol = owner.backingField!!.symbol
+
+                    public constructor(context: IrPluginContext) : this(
+                        context,
+                        resolveSymbol(context)
+                    )
+
+                    /**
+                     * Call the getter
+                     *
+                     * @param dispatchReceiver `tester.second.TestAnnotation`
+                     * @return `tester.second.ExportedAnnotation`
+                     */
+                    public fun `get`(builder: IrBuilderWithScope, dispatchReceiver: IrExpression):
+                            IrCall = builder.irCall(getter).apply {
+                        this.dispatchReceiver = dispatchReceiver
+                        type = getter.owner.returnType
+                    }
+
+
+                    public open class Instance(
+                        public val call: IrCall
+                    ) {
+                        init {
+                            val signature = call.symbol.owner.correspondingPropertySymbol?.signature
+                            val requiredSignature = r.signature
+                            require(signature == requiredSignature) {
+                                """Instance's signature $signature did not match the required signature of $requiredSignature"""
+                            }
+                        }
+
+                        public val dispatchReceiver: IrExpression?
+                            get() = call.dispatchReceiver
+
+                        public val `property`: IrProperty
+                            get() = call.symbol.owner.correspondingPropertySymbol!!.owner
+                    }
+
+                    public class GetterInstance(
+                        call: IrCall
+                    ) : Instance(call) {
+                        init {
+                            require(call.symbol.owner.isGetter) {
+                                """Instance ${call.symbol} is not the right type of accessor, expected a getter"""
+                            }
+                        }
+                    }
+
+                    public companion object Reference :
+                        PropertyReference<r>(
+                            FqName("tester.second.TestAnnotation.r"),
+                            IdSignature.PublicSignature(
+                                "tester.second",
+                                "TestAnnotation.r", -8117627916896159533, 0
+                            )
+                        ) {
+                        public override fun getResolvedReference(
+                            context: IrPluginContext,
+                            symbol: IrPropertySymbol
+                        ): r = r(context, symbol)
+
+                        public fun accessorInstance(call: IrCall): Instance = Instance(call)
+
+                        public fun accessorInstanceOrNull(call: IrCall): Instance? {
+                            if (call.symbol.owner.correspondingPropertySymbol?.signature ==
+                                r.signature
+                            ) {
+                                return Instance(call)
+                            } else {
+                                return null
+                            }
+                        }
+
+                        public fun getterInstance(call: IrCall): GetterInstance =
+                            GetterInstance(call)
+
+                        public fun getterInstanceOrNull(call: IrCall): GetterInstance? {
+                            if (call.symbol.owner.correspondingPropertySymbol?.signature ==
+                                r.signature && call.symbol.owner.isGetter
+                            ) {
+                                return GetterInstance(call)
+                            } else {
+                                return null
+                            }
+                        }
+                    }
+                }
+
+                /**
+                 * Resolved reference to `tester.second.TestAnnotation.s`
+                 *
+                 * Dispatch receiver: `tester.second.TestAnnotation`
+                 *
+                 * Type: `kotlin.String`
+                 */
+                public class s private constructor(
+                    private val _context: IrPluginContext,
+                    symbol: IrPropertySymbol
+                ) : ResolvedProperty(symbol, fqName) {
+                    /**
+                     * Get the property's type.
+                     */
+                    public val type: IrType = (owner.getter?.returnType ?: owner.backingField?.type)!!
+
+                    /**
+                     * The getter
+                     */
+                    public val getter: IrSimpleFunctionSymbol = owner.getter!!.symbol
+
+                    /**
+                     * The backing field
+                     */
+                    public val backingField: IrFieldSymbol = owner.backingField!!.symbol
+
+                    public constructor(context: IrPluginContext) : this(
+                        context,
+                        resolveSymbol(context)
+                    )
+
+                    /**
+                     * Call the getter
+                     *
+                     * @param dispatchReceiver `tester.second.TestAnnotation`
+                     * @return `kotlin.String`
+                     */
+                    public fun `get`(builder: IrBuilderWithScope, dispatchReceiver: IrExpression):
+                            IrCall = builder.irCall(getter).apply {
+                        this.dispatchReceiver = dispatchReceiver
+                        type = getter.owner.returnType
+                    }
+
+
+                    public open class Instance(
+                        public val call: IrCall
+                    ) {
+                        init {
+                            val signature = call.symbol.owner.correspondingPropertySymbol?.signature
+                            val requiredSignature = s.signature
+                            require(signature == requiredSignature) {
+                                """Instance's signature $signature did not match the required signature of $requiredSignature"""
+                            }
+                        }
+
+                        public val dispatchReceiver: IrExpression?
+                            get() = call.dispatchReceiver
+
+                        public val `property`: IrProperty
+                            get() = call.symbol.owner.correspondingPropertySymbol!!.owner
+                    }
+
+                    public class GetterInstance(
+                        call: IrCall
+                    ) : Instance(call) {
+                        init {
+                            require(call.symbol.owner.isGetter) {
+                                """Instance ${call.symbol} is not the right type of accessor, expected a getter"""
+                            }
+                        }
+                    }
+
+                    public companion object Reference :
+                        PropertyReference<s>(
+                            FqName("tester.second.TestAnnotation.s"),
+                            IdSignature.PublicSignature(
+                                "tester.second", "TestAnnotation.s",
+                                7217541905509134881, 0
+                            )
+                        ) {
+                        public override fun getResolvedReference(
+                            context: IrPluginContext,
+                            symbol: IrPropertySymbol
+                        ): s = s(context, symbol)
+
+                        public fun accessorInstance(call: IrCall): Instance = Instance(call)
+
+                        public fun accessorInstanceOrNull(call: IrCall): Instance? {
+                            if (call.symbol.owner.correspondingPropertySymbol?.signature ==
+                                s.signature
+                            ) {
+                                return Instance(call)
+                            } else {
+                                return null
+                            }
+                        }
+
+                        public fun getterInstance(call: IrCall): GetterInstance =
+                            GetterInstance(call)
+
+                        public fun getterInstanceOrNull(call: IrCall): GetterInstance? {
+                            if (call.symbol.owner.correspondingPropertySymbol?.signature ==
+                                s.signature && call.symbol.owner.isGetter
+                            ) {
+                                return GetterInstance(call)
+                            } else {
+                                return null
+                            }
+                        }
+                    }
+                }
+
+                /**
+                 * Resolved reference to `tester.second.TestAnnotation.t`
+                 *
+                 * Dispatch receiver: `tester.second.TestAnnotation`
+                 *
+                 * Type: `kotlin.Int`
+                 */
+                public class t private constructor(
+                    private val _context: IrPluginContext,
+                    symbol: IrPropertySymbol
+                ) : ResolvedProperty(symbol, fqName) {
+                    /**
+                     * Get the property's type.
+                     */
+                    public val type: IrType = (owner.getter?.returnType ?: owner.backingField?.type)!!
+
+                    /**
+                     * The getter
+                     */
+                    public val getter: IrSimpleFunctionSymbol = owner.getter!!.symbol
+
+                    /**
+                     * The backing field
+                     */
+                    public val backingField: IrFieldSymbol = owner.backingField!!.symbol
+
+                    public constructor(context: IrPluginContext) : this(
+                        context,
+                        resolveSymbol(context)
+                    )
+
+                    /**
+                     * Call the getter
+                     *
+                     * @param dispatchReceiver `tester.second.TestAnnotation`
+                     * @return `kotlin.Int`
+                     */
+                    public fun `get`(builder: IrBuilderWithScope, dispatchReceiver: IrExpression):
+                            IrCall = builder.irCall(getter).apply {
+                        this.dispatchReceiver = dispatchReceiver
+                        type = getter.owner.returnType
+                    }
+
+
+                    public open class Instance(
+                        public val call: IrCall
+                    ) {
+                        init {
+                            val signature = call.symbol.owner.correspondingPropertySymbol?.signature
+                            val requiredSignature = t.signature
+                            require(signature == requiredSignature) {
+                                """Instance's signature $signature did not match the required signature of $requiredSignature"""
+                            }
+                        }
+
+                        public val dispatchReceiver: IrExpression?
+                            get() = call.dispatchReceiver
+
+                        public val `property`: IrProperty
+                            get() = call.symbol.owner.correspondingPropertySymbol!!.owner
+                    }
+
+                    public class GetterInstance(
+                        call: IrCall
+                    ) : Instance(call) {
+                        init {
+                            require(call.symbol.owner.isGetter) {
+                                """Instance ${call.symbol} is not the right type of accessor, expected a getter"""
+                            }
+                        }
+                    }
+
+                    public companion object Reference :
+                        PropertyReference<t>(
+                            FqName("tester.second.TestAnnotation.t"),
+                            IdSignature.PublicSignature(
+                                "tester.second",
+                                "TestAnnotation.t", -8767999791664836944, 0
+                            )
+                        ) {
+                        public override fun getResolvedReference(
+                            context: IrPluginContext,
+                            symbol: IrPropertySymbol
+                        ): t = t(context, symbol)
+
+                        public fun accessorInstance(call: IrCall): Instance = Instance(call)
+
+                        public fun accessorInstanceOrNull(call: IrCall): Instance? {
+                            if (call.symbol.owner.correspondingPropertySymbol?.signature ==
+                                t.signature
+                            ) {
+                                return Instance(call)
+                            } else {
+                                return null
+                            }
+                        }
+
+                        public fun getterInstance(call: IrCall): GetterInstance =
+                            GetterInstance(call)
+
+                        public fun getterInstanceOrNull(call: IrCall): GetterInstance? {
+                            if (call.symbol.owner.correspondingPropertySymbol?.signature ==
+                                t.signature && call.symbol.owner.isGetter
+                            ) {
+                                return GetterInstance(call)
+                            } else {
+                                return null
+                            }
+                        }
+                    }
+                }
+
                 public companion object Reference :
                     ClassReference<TestAnnotation>(
                         FqName("tester.second.TestAnnotation"),
                         IdSignature.PublicSignature("tester.second", "TestAnnotation", null, 0)
                     ) {
+                    public val a: a.Reference = TestAnnotation.a.Reference
+
+                    public val c: c.Reference = TestAnnotation.c.Reference
+
+                    public val e: e.Reference = TestAnnotation.e.Reference
+
+                    public val n: n.Reference = TestAnnotation.n.Reference
+
+                    public val r: r.Reference = TestAnnotation.r.Reference
+
+                    public val s: s.Reference = TestAnnotation.s.Reference
+
+                    public val t: t.Reference = TestAnnotation.t.Reference
+
                     public override fun getResolvedReference(
                         context: IrPluginContext,
                         symbol: IrClassSymbol
@@ -710,581 +1659,15 @@ public class Names(
                         context: IrPluginContext,
                         symbol: IrClassSymbol
                     ): TestEnum = TestEnum(context, symbol)
-                }
-            }
 
-            /**
-             * Resolved reference to `tester.second.TestTypealias`
-             *
-             */
-            public class TestTypealias private constructor(
-                private val _context: IrPluginContext,
-                symbol: IrTypeAliasSymbol
-            ) : ResolvedTypealias(symbol, fqName) {
-                /**
-                 * Get the expanded type.
-                 */
-                public val type: IrType = owner.expandedType
-
-                public constructor(context: IrPluginContext) : this(context, resolveSymbol(context))
-
-                public companion object Reference :
-                    TypealiasReference<TestTypealias>(
-                        FqName("tester.second.TestTypealias"),
-                        IdSignature.PublicSignature("tester.second", "TestTypealias", null, 0)
-                    ) {
-                    public override fun getResolvedReference(
-                        context: IrPluginContext,
-                        symbol: IrTypeAliasSymbol
-                    ): TestTypealias = TestTypealias(
-                        context,
-                        symbol
-                    )
-                }
-            }
-
-            /**
-             * Resolved reference to `tester.second.TestTypealiasWithArg`
-             *
-             * Type parameters:
-             * * `T`
-             *
-             */
-            public class TestTypealiasWithArg private constructor(
-                private val _context: IrPluginContext,
-                symbol: IrTypeAliasSymbol
-            ) : ResolvedTypealias(symbol, fqName) {
-                public constructor(context: IrPluginContext) : this(context, resolveSymbol(context))
-
-                /**
-                 * Get the expanded type.
-                 *
-                 * @param T `?`
-                 */
-                public fun type(T: IrType): IrType =
-                    owner.expandedType.substitute(owner.typeParameters, listOf(T))
-
-                public companion object Reference :
-                    TypealiasReference<TestTypealiasWithArg>(
-                        FqName("tester.second.TestTypealiasWithArg"),
-                        IdSignature.PublicSignature(
-                            "tester.second", "TestTypealiasWithArg", null,
-                            0
-                        )
-                    ) {
-                    public override fun getResolvedReference(
-                        context: IrPluginContext,
-                        symbol: IrTypeAliasSymbol
-                    ): TestTypealiasWithArg =
-                        TestTypealiasWithArg(context, symbol)
-                }
-            }
-
-            /**
-             * Resolved reference to `tester.second.WithTypeParams`
-             *
-             * Type parameters:
-             * * `T : kotlin.Number`
-             *
-             */
-            public class WithTypeParams private constructor(
-                private val _context: IrPluginContext,
-                symbol: IrClassSymbol
-            ) : ResolvedClass(symbol, fqName) {
-                public constructor(context: IrPluginContext) : this(context, resolveSymbol(context))
-
-                /**
-                 * Get the class's type.
-                 *
-                 * @param T `? : kotlin.Number`
-                 */
-                public fun type(T: IrType): IrSimpleType = owner.typeWith(T)
-
-                /**
-                 * Get the class's type.
-                 *
-                 * @param T `? : kotlin.Number`
-                 */
-                public fun type(T: IrTypeArgument = IrStarProjectionImpl): IrSimpleType =
-                    typeWithArguments(listOf(T));
-
-                public fun ctor(): ctor = ctor(_context)
-
-                /**
-                 * Resolved reference to `tester.second.WithTypeParams.<init>`
-                 *
-                 * Constructs class `tester.second.WithTypeParams<T of
-                 * tester.second.WithTypeParams>`
-                 *
-                 * Class type parameters:
-                 * * `T : kotlin.Number`
-                 *
-                 * Value parameters:
-                 * * `n: T of tester.second.WithTypeParams`
-                 *
-                 */
-                public class ctor private constructor(
-                    private val _context: IrPluginContext,
-                    symbol: IrConstructorSymbol
-                ) : ResolvedConstructor(symbol, fqName) {
-                    public constructor(context: IrPluginContext) : this(
-                        context,
-                        resolveSymbol(context)
-                    )
-
-                    /**
-                     * Get the constructed type.
-                     *
-                     * @param T `? : kotlin.Number`
-                     */
-                    public fun constructedType(T: IrType): IrType =
-                        owner.constructedClassType.substitute(
-                            owner.constructedClass.typeParameters,
-                            listOf(T)
-                        )
-
-                    /**
-                     * Call the constructor
-                     *
-                     * @param T `? : kotlin.Number`
-                     * @param n `T of tester.second.WithTypeParams`
-                     * @return `tester.second.WithTypeParams<T of tester.second.WithTypeParams>`
-                     */
-                    public fun call(
-                        builder: IrBuilderWithScope,
-                        T: IrType,
-                        n: IrExpression
-                    ): IrConstructorCall = builder.irCallConstructor(this, listOf(T)).apply {
-                        type = owner.returnType.substitute(typeSubstitutionMap)
-                        putValueArgument(0, n)
+                    public fun instance(symbol: IrEnumEntrySymbol): Instance {
+                        require(symbol.owner.parentAsClass.hasEqualFqName(fqName)) {
+                            """Enum symbol $symbol is not an entry of $fqName"""
+                        }
+                        return Instance.valueOf(symbol.owner.name.asString())
                     }
 
-
-                    public class Instance(
-                        public val call: IrConstructorCall
-                    ) {
-                        init {
-                            val signature = call.symbol.signature
-                            val requiredSignature = ctor.signature
-                            require(signature == requiredSignature) {
-                                """Instance's signature $signature did not match the required signature of $requiredSignature"""
-                            }
-                        }
-
-                        public val T: IrType?
-                            get() = call.getTypeArgument(0)
-
-                        public val n: IrExpression?
-                            get() = call.getValueArgument(0)
-                    }
-
-                    public companion object Reference :
-                        ConstructorReference<ctor>(
-                            FqName("tester.second.WithTypeParams"),
-                            IdSignature.PublicSignature(
-                                "tester.second",
-                                "WithTypeParams.<init>", -8731461708390519279, 0
-                            )
-                        ) {
-                        public override fun getResolvedReference(
-                            context: IrPluginContext,
-                            symbol: IrConstructorSymbol
-                        ): ctor = ctor(context, symbol)
-
-                        public fun instance(call: IrConstructorCall): Instance = Instance(call)
-
-                        public fun instanceOrNull(call: IrConstructorCall): Instance? {
-                            if (call.symbol.signature == ctor.signature) {
-                                return Instance(call)
-                            } else {
-                                return null
-                            }
-                        }
-                    }
-                }
-
-                public companion object Reference :
-                    ClassReference<WithTypeParams>(
-                        FqName("tester.second.WithTypeParams"),
-                        IdSignature.PublicSignature("tester.second", "WithTypeParams", null, 0)
-                    ) {
-                    public val ctor: ctor.Reference = WithTypeParams.ctor.Reference
-
-                    public override fun getResolvedReference(
-                        context: IrPluginContext,
-                        symbol: IrClassSymbol
-                    ): WithTypeParams = WithTypeParams(context, symbol)
-                }
-            }
-
-            public class jsMain(
-                private val _context: IrPluginContext
-            ) {
-                init {
-                    check(_context.platform.isJs() || _context.platform.isJs()) {
-                        """Required a platform of one of [JS], but was ${_context.platform}"""
-                    }
-                }
-
-                public fun jsOnly(): jsOnly = jsOnly(_context)
-
-                /**
-                 * Resolved reference to `tester.second.jsOnly`
-                 *
-                 * Type: `kotlin.Int`
-                 */
-                public class jsOnly private constructor(
-                    private val _context: IrPluginContext,
-                    symbol: IrPropertySymbol
-                ) : ResolvedProperty(symbol, fqName) {
-                    /**
-                     * Get the property's type.
-                     */
-                    public val type: IrType = (owner.getter?.returnType ?: owner.backingField?.type)!!
-
-                    /**
-                     * The getter
-                     */
-                    public val getter: IrSimpleFunctionSymbol = owner.getter!!.symbol
-
-                    /**
-                     * The backing field
-                     */
-                    public val backingField: IrFieldSymbol = owner.backingField!!.symbol
-
-                    public constructor(context: IrPluginContext) : this(
-                        context,
-                        resolveSymbol(context)
-                    )
-
-                    /**
-                     * Call the getter
-                     *
-                     * @return `kotlin.Int`
-                     */
-                    public fun `get`(builder: IrBuilderWithScope): IrCall =
-                        builder.irCall(getter).apply {
-                            type = getter.owner.returnType
-                        }
-
-
-                    public open class Instance(
-                        public val call: IrCall
-                    ) {
-                        init {
-                            val signature = call.symbol.owner.correspondingPropertySymbol?.signature
-                            val requiredSignature = jsOnly.signature
-                            require(signature == requiredSignature) {
-                                """Instance's signature $signature did not match the required signature of $requiredSignature"""
-                            }
-                        }
-
-                        public val `property`: IrProperty
-                            get() = call.symbol.owner.correspondingPropertySymbol!!.owner
-                    }
-
-                    public class GetterInstance(
-                        call: IrCall
-                    ) : Instance(call) {
-                        init {
-                            require(call.symbol.owner.isGetter) {
-                                """Instance ${call.symbol} is not the right type of accessor, expected a getter"""
-                            }
-                        }
-                    }
-
-                    public companion object Reference :
-                        PropertyReference<jsOnly>(
-                            FqName("tester.second.jsOnly"),
-                            IdSignature.PublicSignature(
-                                "tester.second",
-                                "jsOnly", -2077863175392834496, 0
-                            )
-                        ) {
-                        public override fun getResolvedReference(
-                            context: IrPluginContext,
-                            symbol: IrPropertySymbol
-                        ): jsOnly = jsOnly(context, symbol)
-
-                        public fun accessorInstance(call: IrCall): Instance = Instance(call)
-
-                        public fun accessorInstanceOrNull(call: IrCall): Instance? {
-                            if (call.symbol.owner.correspondingPropertySymbol?.signature ==
-                                jsOnly.signature
-                            ) {
-                                return Instance(call)
-                            } else {
-                                return null
-                            }
-                        }
-
-                        public fun getterInstance(call: IrCall): GetterInstance =
-                            GetterInstance(call)
-
-                        public fun getterInstanceOrNull(call: IrCall): GetterInstance? {
-                            if (call.symbol.owner.correspondingPropertySymbol?.signature ==
-                                jsOnly.signature && call.symbol.owner.isGetter
-                            ) {
-                                return GetterInstance(call)
-                            } else {
-                                return null
-                            }
-                        }
-                    }
-                }
-
-                public companion object Reference {
-                    public val jsOnly: jsOnly.Reference = jsMain.jsOnly.Reference
-                }
-            }
-
-            public class jvmMain(
-                private val _context: IrPluginContext
-            ) {
-                init {
-                    check(_context.platform.isJvm() || _context.platform.isJvm()) {
-                        """Required a platform of one of [JVM], but was ${_context.platform}"""
-                    }
-                }
-
-                public fun jvmOnly(): jvmOnly = jvmOnly(_context)
-
-                public fun testActualFun(): testActualFun = testActualFun(_context)
-
-                /**
-                 * Resolved reference to `tester.second.jvmOnly`
-                 *
-                 * Return type: `kotlin.Int`
-                 */
-                public class jvmOnly private constructor(
-                    private val _context: IrPluginContext,
-                    symbol: IrSimpleFunctionSymbol
-                ) : ResolvedFunction(symbol, fqName) {
-                    /**
-                     * Get the return type.
-                     */
-                    public val returnType: IrType = owner.returnType
-
-                    public constructor(context: IrPluginContext) : this(
-                        context,
-                        resolveSymbol(context)
-                    )
-
-                    /**
-                     * Call the function
-                     *
-                     * @return `kotlin.Int`
-                     */
-                    public fun call(builder: IrBuilderWithScope): IrCall =
-                        builder.irCall(this).apply {
-                            type = owner.returnType
-                        }
-
-
-                    public class Instance(
-                        public val call: IrCall
-                    ) {
-                        init {
-                            val signature = call.symbol.signature
-                            val requiredSignature = jvmOnly.signature
-                            require(signature == requiredSignature) {
-                                """Instance's signature $signature did not match the required signature of $requiredSignature"""
-                            }
-                        }
-                    }
-
-                    public companion object Reference :
-                        FunctionReference<jvmOnly>(
-                            FqName("tester.second.jvmOnly"),
-                            IdSignature.PublicSignature(
-                                "tester.second",
-                                "jvmOnly", -2448200670399723248, 0
-                            )
-                        ) {
-                        public override fun getResolvedReference(
-                            context: IrPluginContext,
-                            symbol: IrSimpleFunctionSymbol
-                        ): jvmOnly = jvmOnly(context, symbol)
-
-                        public fun instance(call: IrCall): Instance = Instance(call)
-
-                        public fun instanceOrNull(call: IrCall): Instance? {
-                            if (call.symbol.signature == jvmOnly.signature) {
-                                return Instance(call)
-                            } else {
-                                return null
-                            }
-                        }
-                    }
-                }
-
-                /**
-                 * Resolved reference to `tester.second.testActualFun`
-                 *
-                 * Return type: `kotlin.String`
-                 */
-                public class testActualFun private constructor(
-                    private val _context: IrPluginContext,
-                    symbol: IrSimpleFunctionSymbol
-                ) : ResolvedFunction(symbol, fqName) {
-                    /**
-                     * Get the return type.
-                     */
-                    public val returnType: IrType = owner.returnType
-
-                    public constructor(context: IrPluginContext) : this(
-                        context,
-                        resolveSymbol(context)
-                    )
-
-                    /**
-                     * Call the function
-                     *
-                     * @return `kotlin.String`
-                     */
-                    public fun call(builder: IrBuilderWithScope): IrCall =
-                        builder.irCall(this).apply {
-                            type = owner.returnType
-                        }
-
-
-                    public class Instance(
-                        public val call: IrCall
-                    ) {
-                        init {
-                            val signature = call.symbol.signature
-                            val requiredSignature = testActualFun.signature
-                            require(signature == requiredSignature) {
-                                """Instance's signature $signature did not match the required signature of $requiredSignature"""
-                            }
-                        }
-                    }
-
-                    public companion object Reference :
-                        FunctionReference<testActualFun>(
-                            FqName("tester.second.testActualFun"),
-                            IdSignature.PublicSignature(
-                                "tester.second", "testActualFun",
-                                2006045546115900169, 0
-                            )
-                        ) {
-                        public override fun getResolvedReference(
-                            context: IrPluginContext,
-                            symbol: IrSimpleFunctionSymbol
-                        ): testActualFun =
-                            testActualFun(context, symbol)
-
-                        public fun instance(call: IrCall): Instance = Instance(call)
-
-                        public fun instanceOrNull(call: IrCall): Instance? {
-                            if (call.symbol.signature == testActualFun.signature) {
-                                return Instance(call)
-                            } else {
-                                return null
-                            }
-                        }
-                    }
-                }
-
-                public companion object Reference {
-                    public val jvmOnly: jvmOnly.Reference = jvmMain.jvmOnly.Reference
-
-                    public val testActualFun: testActualFun.Reference =
-                        jvmMain.testActualFun.Reference
-                }
-            }
-
-            public class nativeMain(
-                private val _context: IrPluginContext
-            ) {
-                init {
-                    check(_context.platform.isNative() || _context.platform.isNative()) {
-                        """Required a platform of one of [Native], but was ${_context.platform}"""
-                    }
-                }
-
-                public fun nativeOnly(): nativeOnly = nativeOnly(_context)
-
-                /**
-                 * Resolved reference to `tester.second.nativeOnly`
-                 *
-                 * Value parameters:
-                 * * `arg: kotlin.Int`
-                 *
-                 * Return type: `kotlin.Unit`
-                 */
-                public class nativeOnly private constructor(
-                    private val _context: IrPluginContext,
-                    symbol: IrSimpleFunctionSymbol
-                ) : ResolvedFunction(symbol, fqName) {
-                    /**
-                     * Get the return type.
-                     */
-                    public val returnType: IrType = owner.returnType
-
-                    public constructor(context: IrPluginContext) : this(
-                        context,
-                        resolveSymbol(context)
-                    )
-
-                    /**
-                     * Call the function
-                     *
-                     * @param arg `kotlin.Int`
-                     * @return `kotlin.Unit`
-                     */
-                    public fun call(builder: IrBuilderWithScope, arg: IrExpression): IrCall =
-                        builder.irCall(this).apply {
-                            type = owner.returnType
-                            putValueArgument(0, arg)
-                        }
-
-
-                    public class Instance(
-                        public val call: IrCall
-                    ) {
-                        init {
-                            val signature = call.symbol.signature
-                            val requiredSignature = nativeOnly.signature
-                            require(signature == requiredSignature) {
-                                """Instance's signature $signature did not match the required signature of $requiredSignature"""
-                            }
-                        }
-
-                        public val arg: IrExpression?
-                            get() = call.getValueArgument(0)
-                    }
-
-                    public companion object Reference :
-                        FunctionReference<nativeOnly>(
-                            FqName("tester.second.nativeOnly"),
-                            IdSignature.PublicSignature(
-                                "tester.second",
-                                "nativeOnly", -5197429736103048112, 0
-                            )
-                        ) {
-                        public override fun getResolvedReference(
-                            context: IrPluginContext,
-                            symbol: IrSimpleFunctionSymbol
-                        ): nativeOnly = nativeOnly(
-                            context,
-                            symbol
-                        )
-
-                        public fun instance(call: IrCall): Instance = Instance(call)
-
-                        public fun instanceOrNull(call: IrCall): Instance? {
-                            if (call.symbol.signature == nativeOnly.signature) {
-                                return Instance(call)
-                            } else {
-                                return null
-                            }
-                        }
-                    }
-                }
-
-                public companion object Reference {
-                    public val nativeOnly: nativeOnly.Reference = nativeMain.nativeOnly.Reference
+                    public fun instance(`get`: IrGetEnumValue): Instance = instance(get.symbol)
                 }
             }
 
@@ -1391,548 +1774,6 @@ public class Names(
                 }
             }
 
-            /**
-             * Resolved reference to `tester.second.testExpectFun`
-             *
-             * Return type: `kotlin.String`
-             */
-            public class testExpectFun private constructor(
-                private val _context: IrPluginContext,
-                symbol: IrSimpleFunctionSymbol
-            ) : ResolvedFunction(symbol, fqName) {
-                /**
-                 * Get the return type.
-                 */
-                public val returnType: IrType = owner.returnType
-
-                public constructor(context: IrPluginContext) : this(context, resolveSymbol(context))
-
-                /**
-                 * Call the function
-                 *
-                 * @return `kotlin.String`
-                 */
-                public fun call(builder: IrBuilderWithScope): IrCall = builder.irCall(this).apply {
-                    type = owner.returnType
-                }
-
-
-                public class Instance(
-                    public val call: IrCall
-                ) {
-                    init {
-                        val signature = call.symbol.signature
-                        val requiredSignature = testExpectFun.signature
-                        require(signature == requiredSignature) {
-                            """Instance's signature $signature did not match the required signature of $requiredSignature"""
-                        }
-                    }
-                }
-
-                public companion object Reference :
-                    FunctionReference<testExpectFun>(
-                        FqName("tester.second.testExpectFun"),
-                        IdSignature.PublicSignature(
-                            "tester.second",
-                            "testExpectFun", -3360200318902071065, 1
-                        )
-                    ) {
-                    public override fun getResolvedReference(
-                        context: IrPluginContext,
-                        symbol: IrSimpleFunctionSymbol
-                    ): testExpectFun = testExpectFun(
-                        context,
-                        symbol
-                    )
-
-                    public fun instance(call: IrCall): Instance = Instance(call)
-
-                    public fun instanceOrNull(call: IrCall): Instance? {
-                        if (call.symbol.signature == testExpectFun.signature) {
-                            return Instance(call)
-                        } else {
-                            return null
-                        }
-                    }
-                }
-            }
-
-            /**
-             * Resolved reference to `tester.second.testIsOne`
-             *
-             * Value parameters:
-             * * `t: tester.second.TestEnum`
-             *
-             * Return type: `kotlin.Boolean`
-             */
-            public class testIsOne private constructor(
-                private val _context: IrPluginContext,
-                symbol: IrSimpleFunctionSymbol
-            ) : ResolvedFunction(symbol, fqName) {
-                /**
-                 * Get the return type.
-                 */
-                public val returnType: IrType = owner.returnType
-
-                public constructor(context: IrPluginContext) : this(context, resolveSymbol(context))
-
-                /**
-                 * Call the function
-                 *
-                 * @param t `tester.second.TestEnum`
-                 * @return `kotlin.Boolean`
-                 */
-                public fun call(builder: IrBuilderWithScope, t: IrExpression): IrCall =
-                    builder.irCall(this).apply {
-                        type = owner.returnType
-                        putValueArgument(0, t)
-                    }
-
-
-                public class Instance(
-                    public val call: IrCall
-                ) {
-                    init {
-                        val signature = call.symbol.signature
-                        val requiredSignature = testIsOne.signature
-                        require(signature == requiredSignature) {
-                            """Instance's signature $signature did not match the required signature of $requiredSignature"""
-                        }
-                    }
-
-                    public val t: IrExpression?
-                        get() = call.getValueArgument(0)
-                }
-
-                public companion object Reference :
-                    FunctionReference<testIsOne>(
-                        FqName("tester.second.testIsOne"),
-                        IdSignature.PublicSignature(
-                            "tester.second",
-                            "testIsOne", -4448082258041760847, 0
-                        )
-                    ) {
-                    public override fun getResolvedReference(
-                        context: IrPluginContext,
-                        symbol: IrSimpleFunctionSymbol
-                    ): testIsOne = testIsOne(context, symbol)
-
-                    public fun instance(call: IrCall): Instance = Instance(call)
-
-                    public fun instanceOrNull(call: IrCall): Instance? {
-                        if (call.symbol.signature == testIsOne.signature) {
-                            return Instance(call)
-                        } else {
-                            return null
-                        }
-                    }
-                }
-            }
-
-            /**
-             * Resolved reference to `tester.second.testPropWithTypeVar`
-             *
-             * Type parameters:
-             * * `T : kotlin.Number`
-             *
-             * Extension receiver: `T of tester.second.<get-testPropWithTypeVar>`
-             *
-             * Type: `kotlin.Int`
-             */
-            public class testPropWithTypeVar private constructor(
-                private val _context: IrPluginContext,
-                symbol: IrPropertySymbol
-            ) : ResolvedProperty(symbol, fqName) {
-                /**
-                 * The getter
-                 */
-                public val getter: IrSimpleFunctionSymbol = owner.getter!!.symbol
-
-                public constructor(context: IrPluginContext) : this(context, resolveSymbol(context))
-
-                /**
-                 * Get the property's type.
-                 *
-                 * @param T `? : kotlin.Number`
-                 */
-                public fun type(T: IrType): IrType =
-                    (owner.getter?.returnType ?: owner.backingField?.type)!!.substitute(
-                        owner.getter!!.typeParameters,
-                        listOf(T)
-                    )
-
-                /**
-                 * Call the getter
-                 *
-                 * @param T `? : kotlin.Number`
-                 * @param extensionReceiver `T of tester.second.<get-testPropWithTypeVar>`
-                 * @return `kotlin.Int`
-                 */
-                public fun `get`(
-                    builder: IrBuilderWithScope,
-                    T: IrType,
-                    extensionReceiver: IrExpression
-                ): IrCall = builder.irCall(getter).apply {
-                    putTypeArgument(0, T)
-                    this.extensionReceiver = extensionReceiver
-                    type = getter.owner.returnType.substitute(typeSubstitutionMap)
-                }
-
-
-                public open class Instance(
-                    public val call: IrCall
-                ) {
-                    init {
-                        val signature = call.symbol.owner.correspondingPropertySymbol?.signature
-                        val requiredSignature = testPropWithTypeVar.signature
-                        require(signature == requiredSignature) {
-                            """Instance's signature $signature did not match the required signature of $requiredSignature"""
-                        }
-                    }
-
-                    public val T: IrType?
-                        get() = call.getTypeArgument(0)
-
-                    public val extensionReceiver: IrExpression?
-                        get() = call.extensionReceiver
-
-                    public val `property`: IrProperty
-                        get() = call.symbol.owner.correspondingPropertySymbol!!.owner
-                }
-
-                public class GetterInstance(
-                    call: IrCall
-                ) : Instance(call) {
-                    init {
-                        require(call.symbol.owner.isGetter) {
-                            """Instance ${call.symbol} is not the right type of accessor, expected a getter"""
-                        }
-                    }
-                }
-
-                public companion object Reference :
-                    PropertyReference<testPropWithTypeVar>(
-                        FqName("tester.second.testPropWithTypeVar"),
-                        IdSignature.PublicSignature(
-                            "tester.second",
-                            "testPropWithTypeVar", -2301283503845253114, 0
-                        )
-                    ) {
-                    public override fun getResolvedReference(
-                        context: IrPluginContext,
-                        symbol: IrPropertySymbol
-                    ): testPropWithTypeVar =
-                        testPropWithTypeVar(context, symbol)
-
-                    public fun accessorInstance(call: IrCall): Instance = Instance(call)
-
-                    public fun accessorInstanceOrNull(call: IrCall): Instance? {
-                        if (call.symbol.owner.correspondingPropertySymbol?.signature ==
-                            testPropWithTypeVar.signature
-                        ) {
-                            return Instance(call)
-                        } else {
-                            return null
-                        }
-                    }
-
-                    public fun getterInstance(call: IrCall): GetterInstance = GetterInstance(call)
-
-                    public fun getterInstanceOrNull(call: IrCall): GetterInstance? {
-                        if (call.symbol.owner.correspondingPropertySymbol?.signature ==
-                            testPropWithTypeVar.signature && call.symbol.owner.isGetter
-                        ) {
-                            return GetterInstance(call)
-                        } else {
-                            return null
-                        }
-                    }
-                }
-            }
-
-            /**
-             * Resolved reference to `tester.second.testPublishedApi`
-             *
-             * Return type: `kotlin.Unit`
-             */
-            public class testPublishedApi private constructor(
-                private val _context: IrPluginContext,
-                symbol: IrSimpleFunctionSymbol
-            ) : ResolvedFunction(symbol, fqName) {
-                /**
-                 * Get the return type.
-                 */
-                public val returnType: IrType = owner.returnType
-
-                public constructor(context: IrPluginContext) : this(context, resolveSymbol(context))
-
-                /**
-                 * Call the function
-                 *
-                 * @return `kotlin.Unit`
-                 */
-                public fun call(builder: IrBuilderWithScope): IrCall = builder.irCall(this).apply {
-                    type = owner.returnType
-                }
-
-
-                public class Instance(
-                    public val call: IrCall
-                ) {
-                    init {
-                        val signature = call.symbol.signature
-                        val requiredSignature = testPublishedApi.signature
-                        require(signature == requiredSignature) {
-                            """Instance's signature $signature did not match the required signature of $requiredSignature"""
-                        }
-                    }
-                }
-
-                public companion object Reference :
-                    FunctionReference<testPublishedApi>(
-                        FqName("tester.second.testPublishedApi"),
-                        IdSignature.PublicSignature(
-                            "tester.second", "testPublishedApi",
-                            5159344213406223961, 0
-                        )
-                    ) {
-                    public override fun getResolvedReference(
-                        context: IrPluginContext,
-                        symbol: IrSimpleFunctionSymbol
-                    ): testPublishedApi =
-                        testPublishedApi(context, symbol)
-
-                    public fun instance(call: IrCall): Instance = Instance(call)
-
-                    public fun instanceOrNull(call: IrCall): Instance? {
-                        if (call.symbol.signature == testPublishedApi.signature) {
-                            return Instance(call)
-                        } else {
-                            return null
-                        }
-                    }
-                }
-            }
-
-            /**
-             * Resolved reference to `tester.second.testPublishedApi`
-             *
-             * Value parameters:
-             * * `t: kotlin.Int`
-             *
-             * Return type: `kotlin.Unit`
-             */
-            public class testPublishedApi_1 private constructor(
-                private val _context: IrPluginContext,
-                symbol: IrSimpleFunctionSymbol
-            ) : ResolvedFunction(symbol, fqName) {
-                /**
-                 * Get the return type.
-                 */
-                public val returnType: IrType = owner.returnType
-
-                public constructor(context: IrPluginContext) : this(context, resolveSymbol(context))
-
-                /**
-                 * Call the function
-                 *
-                 * @param t `kotlin.Int`
-                 * @return `kotlin.Unit`
-                 */
-                public fun call(builder: IrBuilderWithScope, t: IrExpression): IrCall =
-                    builder.irCall(this).apply {
-                        type = owner.returnType
-                        putValueArgument(0, t)
-                    }
-
-
-                public class Instance(
-                    public val call: IrCall
-                ) {
-                    init {
-                        val signature = call.symbol.signature
-                        val requiredSignature = testPublishedApi_1.signature
-                        require(signature == requiredSignature) {
-                            """Instance's signature $signature did not match the required signature of $requiredSignature"""
-                        }
-                    }
-
-                    public val t: IrExpression?
-                        get() = call.getValueArgument(0)
-                }
-
-                public companion object Reference :
-                    FunctionReference<testPublishedApi_1>(
-                        FqName("tester.second.testPublishedApi"),
-                        IdSignature.PublicSignature(
-                            "tester.second", "testPublishedApi",
-                            1731966692884449248, 0
-                        )
-                    ) {
-                    public override fun getResolvedReference(
-                        context: IrPluginContext,
-                        symbol: IrSimpleFunctionSymbol
-                    ): testPublishedApi_1 =
-                        testPublishedApi_1(context, symbol)
-
-                    public fun instance(call: IrCall): Instance = Instance(call)
-
-                    public fun instanceOrNull(call: IrCall): Instance? {
-                        if (call.symbol.signature == testPublishedApi_1.signature) {
-                            return Instance(call)
-                        } else {
-                            return null
-                        }
-                    }
-                }
-            }
-
-            /**
-             * Resolved reference to `tester.second.testTopLevelFunction`
-             *
-             * Type parameters:
-             * * `T`
-             *
-             * Extension receiver: `kotlin.Int`
-             *
-             * Value parameters:
-             * * `req: T of tester.second.testTopLevelFunction`
-             * * `opt: kotlin.Double? = ...`
-             * * `vararg t: kotlin.Array<out kotlin.String>`
-             *
-             * Return type: `kotlin.Int`
-             */
-            public class testTopLevelFunction private constructor(
-                private val _context: IrPluginContext,
-                symbol: IrSimpleFunctionSymbol
-            ) : ResolvedFunction(symbol, fqName) {
-                public constructor(context: IrPluginContext) : this(context, resolveSymbol(context))
-
-                /**
-                 * Get the return type.
-                 *
-                 * @param T `?`
-                 */
-                public fun returnType(T: IrType): IrType =
-                    owner.returnType.substitute(owner.typeParameters, listOf(T))
-
-                /**
-                 * Call the function
-                 *
-                 * @param T `?`
-                 * @param extensionReceiver `kotlin.Int`
-                 * @param req `T of tester.second.testTopLevelFunction`
-                 * @param opt `kotlin.Double? = ...`
-                 * @param t `vararg kotlin.Array<out kotlin.String>`
-                 * @return `kotlin.Int`
-                 */
-                public fun call(
-                    builder: IrBuilderWithScope,
-                    T: IrType,
-                    extensionReceiver: IrExpression,
-                    req: IrExpression,
-                    opt: IrExpression? = null,
-                    t: IrExpression
-                ): IrCall = builder.irCall(this).apply {
-                    putTypeArgument(0, T)
-                    this.extensionReceiver = extensionReceiver
-                    type = owner.returnType.substitute(typeSubstitutionMap)
-                    putValueArgument(0, req)
-                    if (opt != null) {
-                        putValueArgument(1, opt)
-                    }
-                    putValueArgument(2, t)
-                }
-
-
-                /**
-                 * Call the function
-                 *
-                 * @param T `?`
-                 * @param extensionReceiver `kotlin.Int`
-                 * @param req `T of tester.second.testTopLevelFunction`
-                 * @param opt `kotlin.Double? = ...`
-                 * @param t `vararg kotlin.Array<out kotlin.String>`
-                 * @return `kotlin.Int`
-                 */
-                public fun callVararg(
-                    builder: IrBuilderWithScope,
-                    T: IrType,
-                    extensionReceiver: IrExpression,
-                    req: IrExpression,
-                    opt: IrExpression? = null,
-                    t: Iterable<IrExpression>
-                ): IrCall = builder.irCall(this).apply {
-                    putTypeArgument(0, T)
-                    this.extensionReceiver = extensionReceiver
-                    type = owner.returnType.substitute(typeSubstitutionMap)
-                    putValueArgument(0, req)
-                    if (opt != null) {
-                        putValueArgument(1, opt)
-                    }
-                    putValueArgument(
-                        2,
-                        builder.irVararg(
-                            owner.valueParameters[2].varargElementType!!.substitute(typeSubstitutionMap),
-                            t.toList()
-                        )
-                    )
-                }
-
-
-                public class Instance(
-                    public val call: IrCall
-                ) {
-                    init {
-                        val signature = call.symbol.signature
-                        val requiredSignature = testTopLevelFunction.signature
-                        require(signature == requiredSignature) {
-                            """Instance's signature $signature did not match the required signature of $requiredSignature"""
-                        }
-                    }
-
-                    public val T: IrType?
-                        get() = call.getTypeArgument(0)
-
-                    public val req: IrExpression?
-                        get() = call.getValueArgument(0)
-
-                    public val opt: IrExpression?
-                        get() = call.getValueArgument(1)
-
-                    public val t: IrExpression?
-                        get() = call.getValueArgument(2)
-
-                    public val extensionReceiver: IrExpression?
-                        get() = call.extensionReceiver
-                }
-
-                public companion object Reference :
-                    FunctionReference<testTopLevelFunction>(
-                        FqName("tester.second.testTopLevelFunction"),
-                        IdSignature.PublicSignature(
-                            "tester.second",
-                            "testTopLevelFunction", -3918369520275516103, 0
-                        )
-                    ) {
-                    public override fun getResolvedReference(
-                        context: IrPluginContext,
-                        symbol: IrSimpleFunctionSymbol
-                    ): testTopLevelFunction =
-                        testTopLevelFunction(context, symbol)
-
-                    public fun instance(call: IrCall): Instance = Instance(call)
-
-                    public fun instanceOrNull(call: IrCall): Instance? {
-                        if (call.symbol.signature == testTopLevelFunction.signature) {
-                            return Instance(call)
-                        } else {
-                            return null
-                        }
-                    }
-                }
-            }
-
             public companion object Reference {
                 public val ExportedAnnotation: ExportedAnnotation.Reference =
                     second.ExportedAnnotation.Reference
@@ -1944,37 +1785,7 @@ public class Names(
 
                 public val TestEnum: TestEnum.Reference = second.TestEnum.Reference
 
-                public val TestTypealias: TestTypealias.Reference = second.TestTypealias.Reference
-
-                public val TestTypealiasWithArg: TestTypealiasWithArg.Reference =
-                    second.TestTypealiasWithArg.Reference
-
-                public val WithTypeParams: WithTypeParams.Reference =
-                    second.WithTypeParams.Reference
-
-                public val jsMain: jsMain.Reference = second.jsMain.Reference
-
-                public val jvmMain: jvmMain.Reference = second.jvmMain.Reference
-
-                public val nativeMain: nativeMain.Reference = second.nativeMain.Reference
-
                 public val testConst: testConst.Reference = second.testConst.Reference
-
-                public val testExpectFun: testExpectFun.Reference = second.testExpectFun.Reference
-
-                public val testIsOne: testIsOne.Reference = second.testIsOne.Reference
-
-                public val testPropWithTypeVar: testPropWithTypeVar.Reference =
-                    second.testPropWithTypeVar.Reference
-
-                public val testPublishedApi: testPublishedApi.Reference =
-                    second.testPublishedApi.Reference
-
-                public val testPublishedApi_1: testPublishedApi_1.Reference =
-                    second.testPublishedApi_1.Reference
-
-                public val testTopLevelFunction: testTopLevelFunction.Reference =
-                    second.testTopLevelFunction.Reference
 
                 public operator fun invoke(context: IrPluginContext) = second(context)
             }

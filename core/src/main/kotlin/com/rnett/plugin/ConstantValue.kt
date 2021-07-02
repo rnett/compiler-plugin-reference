@@ -9,36 +9,36 @@ sealed class ConstantValue(val kind: Kind) {
     abstract fun valueAsString(): kotlin.String
 
     @Serializable
-    sealed class Kind {
+    sealed class Kind(val name: kotlin.String) {
         @Serializable
-        object String : Kind()
+        object String : Kind("String")
 
         @Serializable
-        object Null : Kind()
+        object Null : Kind("Nothing?")
 
         @Serializable
-        object Boolean : Kind()
+        object Boolean : Kind("Boolean")
 
         @Serializable
-        object Char : Kind()
+        object Char : Kind("Char")
 
         @Serializable
-        object Byte : Kind()
+        object Byte : Kind("Byte")
 
         @Serializable
-        object Short : Kind()
+        object Short : Kind("Short")
 
         @Serializable
-        object Int : Kind()
+        object Int : Kind("Int")
 
         @Serializable
-        object Long : Kind()
+        object Long : Kind("Long")
 
         @Serializable
-        object Float : Kind()
+        object Float : Kind("Float")
 
         @Serializable
-        object Double : Kind()
+        object Double : Kind("Double")
     }
 
     @Serializable

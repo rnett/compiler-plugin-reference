@@ -12,6 +12,23 @@ import org.jetbrains.kotlin.ir.util.parentAsClass
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 
+fun IrPluginContext.referenceEnumEntry(fqName: FqName): IrEnumEntrySymbol? = referenceClass(fqName.parent())
+    ?.let {
+        it.owner.declarations
+            .filterIsInstance<IrEnumEntry>()
+            .map { it.symbol }
+            .firstOrNull { it.owner.name == fqName.shortName() }
+    }
+
+fun IrPluginContext.referenceEnumEntry(classFqName: FqName, name: Name): IrEnumEntrySymbol? =
+    referenceClass(classFqName)
+        ?.let {
+            it.owner.declarations
+                .filterIsInstance<IrEnumEntry>()
+                .map { it.symbol }
+                .firstOrNull { it.owner.name == name }
+        }
+
 interface EnumInstance : AnnotationArgument {
     val name: String
     val ordinal: Int
@@ -22,7 +39,7 @@ class EnumEntryReference<E : EnumInstance>(
     instanceGetter: () -> E,
     override val signature: IdSignature.PublicSignature
 ) :
-    Reference<IrEnumEntrySymbol, IrEnumEntry, ResolvedEnumEntry<E>>() {
+    Reference<IrEnumEntrySymbol, IrEnumEntry, ClassDescriptor, ResolvedEnumEntry<E>>() {
     override fun doResolve(context: IrPluginContext): IrEnumEntrySymbol? =
         (context.referenceClass(classFqName) ?: error("Enum class $classFqName not found"))
             .owner.declarations

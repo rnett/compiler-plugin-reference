@@ -5,7 +5,7 @@ import com.squareup.kotlinpoet.ClassName
 
 internal class FqNameLookup(val declarationTree: DeclarationTree, val rootClass: ClassName) {
     private fun DeclarationTree.setupNames(
-        platform: String,
+        platform: String?,
         parent: List<String>,
         map: MutableMap<ResolvedName, ClassName>
     ) {
@@ -18,13 +18,14 @@ internal class FqNameLookup(val declarationTree: DeclarationTree, val rootClass:
     }
 
     @OptIn(ExperimentalStdlibApi::class)
-    private val nameMaps: Map<String, Map<ResolvedName, ClassName>> = declarationTree.allPlatforms.associateWith {
-        buildMap {
-            declarationTree.setupNames(it, emptyList(), this)
+    private val nameMaps: Map<String?, Map<ResolvedName, ClassName>> =
+        declarationTree.allPlatforms.plus(null).associateWith {
+            buildMap {
+                declarationTree.setupNames(it, emptyList(), this)
+            }
         }
-    }
 
-    fun getClassNameForFqName(platform: String, fqName: ResolvedName): ClassName {
+    fun getClassNameForFqName(fqName: ResolvedName, platform: String? = null): ClassName {
         return nameMaps.getValue(platform)[fqName] ?: error("No name for $fqName")
     }
 }

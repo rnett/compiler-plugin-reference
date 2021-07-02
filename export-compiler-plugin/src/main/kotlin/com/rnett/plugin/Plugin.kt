@@ -90,7 +90,7 @@ class PluginExportIrGenerationExtension(
 
     override fun generate(moduleFragment: IrModuleFragment, pluginContext: IrPluginContext) {
         val declarations = moduleFragment.files.associate {
-            val fileName = it.kotlinFqName.toString() + "_" + it.name.substringBefore('.')
+            val fileName = it.kotlinFqName.toString() + "_" + it.name.substringBefore('.') + ".json"
 
             val declarations: MutableList<ExportDeclaration> = mutableListOf()
             PluginExporter(pluginContext, messageCollector, declarations::add).visitFile(it)

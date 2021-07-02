@@ -41,7 +41,8 @@ private fun NamespaceBuilder.RandomTreeHelper(random: Random, depth: Int, names:
     }
 }
 
-inline fun DeclarationTree(builder: PackageBuilder.() -> Unit): DeclarationTree = PackageBuilder(ResolvedName.Root).apply(builder).build().finalize()
+inline fun DeclarationTree(builder: PackageBuilder.() -> Unit): DeclarationTree =
+    PackageBuilder(ResolvedName.Root).apply(builder).build().finalize()
 
 interface NamespaceBuilder {
 
@@ -66,7 +67,17 @@ interface NamespaceBuilder {
         )
 
     fun Function(name: String) =
-        Declaration(ExportDeclaration.Function(childName(name), Signature.None, TypeString.None, null, emptyList(), emptyList(), emptyList()))
+        Declaration(
+            ExportDeclaration.Function(
+                childName(name),
+                Signature.None,
+                TypeString.None,
+                null,
+                emptyList(),
+                emptyList(),
+                emptyList()
+            )
+        )
 
     fun Typealias(name: String) = Declaration(ExportDeclaration.Typealias(childName(name), Signature.None, emptyList()))
 }
@@ -116,10 +127,19 @@ class ClassBuilder(val fqName: ResolvedName) : NamespaceBuilder {
 
     override fun childName(name: String): ResolvedName = fqName.child(name)
 
-    fun build() = DeclarationTree.Class(ExportDeclaration.Class(fqName, Signature.None, listOf(), null, null), declarations)
+    fun build() =
+        DeclarationTree.Class(ExportDeclaration.Class(fqName, Signature.None, listOf(), null, null), declarations)
 
     fun Constructor(name: String = "<init>") =
-        Declaration(ExportDeclaration.Constructor(childName(name), Signature.None, TypeString.None, emptyList(), emptyList()))
+        Declaration(
+            ExportDeclaration.Constructor(
+                childName(name),
+                Signature.None,
+                TypeString.None,
+                emptyList(),
+                emptyList()
+            )
+        )
 }
 
 class PlatformBuilder(val fqName: ResolvedName) : NamespaceBuilder {
@@ -130,9 +150,18 @@ class PlatformBuilder(val fqName: ResolvedName) : NamespaceBuilder {
 
     override fun childName(name: String): ResolvedName = fqName.parent!!.child(name)
 
-    fun build() = DeclarationTree.PlatformSplit(fqName.parent!!, fqName.name, declarations)
+    fun build() =
+        DeclarationTree.PlatformSplit(fqName.parent!!, ResolvedPlatform(setOf(), setOf(), fqName.fqName), declarations)
 
     fun Constructor(name: String = "<init>") =
-        Declaration(ExportDeclaration.Constructor(childName(name), Signature.None, TypeString.None, emptyList(), emptyList()))
+        Declaration(
+            ExportDeclaration.Constructor(
+                childName(name),
+                Signature.None,
+                TypeString.None,
+                emptyList(),
+                emptyList()
+            )
+        )
 }
 
