@@ -3,6 +3,9 @@ package tester.second
 import com.rnett.plugin.export.annotations.PluginExport
 import kotlin.reflect.KClass
 
+//TODO better commonizer tests: expect class w/ additional methods on some platforms
+// nesting like class being native only, method on one native
+
 @PluginExport
 expect fun testExpectFun(): String
 

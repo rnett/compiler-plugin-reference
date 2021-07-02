@@ -63,6 +63,10 @@ object References {
     val constructedClass = MemberName("org.jetbrains.kotlin.ir.util", "constructedClass")
     val constructedClassType = MemberName("org.jetbrains.kotlin.ir.util", "constructedClassType")
 
+    val isNative = MemberName("org.jetbrains.kotlin.platform.konan", "isNative")
+    val isJs = MemberName("org.jetbrains.kotlin.platform.js", "isJs")
+    val isJvm = MemberName("org.jetbrains.kotlin.platform.jvm", "isJvm")
+
     fun referenceType(declaration: ExportDeclaration): ClassName = when (declaration) {
         is ExportDeclaration.Class -> ClassReference
         is ExportDeclaration.Constructor -> ConstructorReference

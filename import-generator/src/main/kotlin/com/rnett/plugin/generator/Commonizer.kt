@@ -5,7 +5,7 @@ import com.rnett.plugin.ResolvedName
 import com.rnett.plugin.SourceSetTree
 
 
-fun Iterable<Platform>.getHighests(): List<ResolvedPlatform> {
+internal fun Iterable<Platform>.getHighests(): List<ResolvedPlatform> {
     val originalSourceSets = flatMap { it.sourceSets }
         .groupBy({ it.sourceSet }) { it.children }
         .mapValues { it.value.flatten().toSet() }
@@ -21,24 +21,23 @@ fun Iterable<Platform>.getHighests(): List<ResolvedPlatform> {
         }
     }
 
-    val result = sourceSets.keys.map { sourceSet ->
-        val sets = this.filter { it.sourceSets.any { it.sourceSet == sourceSet } }
+    return sourceSets.keys.map { sourceSet ->
+        val sets = filter { it.sourceSets.any { it.sourceSet == sourceSet } }
         ResolvedPlatform(
             sets.mapNotNull { it.target }.toSet(),
             sets.map { it.platform }.toSet(),
             sourceSet
         )
     }
-    return result
 }
 
-data class Temp(
+internal data class Temp(
     val expect: DeclarationTree,
     val resolvedPlatforms: List<ResolvedPlatform>,
     val actuals: Map<Platform, DeclarationTree>
 )
 
-fun commonizeChildren(
+internal fun commonizeChildren(
     parent: ResolvedName,
     currentSourceSet: String,
     platforms: Map<Platform, List<DeclarationTree>>
@@ -81,15 +80,15 @@ fun commonize(roots: Map<Platform, DeclarationTree>): DeclarationTree {
         .mapValues { it.value.flatten().toSet() }
         .map { it.key to SourceSetTree(it.key, it.value) }
         .toMap()
+
     val newRoots =
         roots.mapKeys { it.key.copy(sourceSets = it.key.sourceSets.map { fullSourceSets.getValue(it.sourceSet) }) }
 
-    val result = DeclarationTree.Package(
+    return DeclarationTree.Package(
         ResolvedName.Root,
         commonizeChildren(
             ResolvedName.Root,
             "commonMain",
             newRoots.filterValues { it.allDeclarations.isNotEmpty() }.mapValues { listOf(it.value) })
     ).removeExtraRoot()
-    return result
 }

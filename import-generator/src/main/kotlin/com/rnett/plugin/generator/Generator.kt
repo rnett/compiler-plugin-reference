@@ -37,7 +37,6 @@ object PluginImportGenerator {
         fileName: String,
         className: String = "Names"
     ) {
-        //TODO new, source set based commonizer
         generate(
             baseDirectory,
             commonize(declarations.mapValues { DeclarationTree(it.value) }),

@@ -43,6 +43,9 @@ import org.jetbrains.kotlin.ir.util.isSetter
 import org.jetbrains.kotlin.ir.util.substitute
 import org.jetbrains.kotlin.ir.util.typeSubstitutionMap
 import org.jetbrains.kotlin.name.FqName
+import org.jetbrains.kotlin.platform.js.isJs
+import org.jetbrains.kotlin.platform.jvm.isJvm
+import org.jetbrains.kotlin.platform.konan.isNative
 import test.generation.Names.tester.second.TestEnum.Instance
 
 public class Names(
@@ -917,6 +920,12 @@ public class Names(
             public class jsMain(
                 private val _context: IrPluginContext
             ) {
+                init {
+                    check(_context.platform.isJs() || _context.platform.isJs()) {
+                        """Required a platform of one of [JS], but was ${_context.platform}"""
+                    }
+                }
+
                 public fun jsOnly(): jsOnly = jsOnly(_context)
 
                 /**
@@ -1032,6 +1041,12 @@ public class Names(
             public class jvmMain(
                 private val _context: IrPluginContext
             ) {
+                init {
+                    check(_context.platform.isJvm() || _context.platform.isJvm()) {
+                        """Required a platform of one of [JVM], but was ${_context.platform}"""
+                    }
+                }
+
                 public fun jvmOnly(): jvmOnly = jvmOnly(_context)
 
                 public fun testActualFun(): testActualFun = testActualFun(_context)
@@ -1182,6 +1197,12 @@ public class Names(
             public class nativeMain(
                 private val _context: IrPluginContext
             ) {
+                init {
+                    check(_context.platform.isNative() || _context.platform.isNative()) {
+                        """Required a platform of one of [Native], but was ${_context.platform}"""
+                    }
+                }
+
                 public fun nativeOnly(): nativeOnly = nativeOnly(_context)
 
                 /**

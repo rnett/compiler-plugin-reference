@@ -1,6 +1,7 @@
 package com.rnett.plugin.generator
 
 import com.rnett.plugin.ExportDeclaration
+import com.rnett.plugin.PlatformType
 import com.rnett.plugin.TypeString
 import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.CodeBlock
@@ -29,7 +30,31 @@ internal object ResolvedBuilder {
         } // added in build otherwise
 
         if (declarationTree is DeclarationTree.PlatformSplit) {
-            val platform = declarationTree.platform
+            val requires = declarationTree.platform.types
+            val requireMethods = requires.mapNotNull {
+                when (it) {
+                    PlatformType.JVM -> References.isJvm
+                    PlatformType.JS -> References.isJs
+                    PlatformType.Native -> References.isNative
+                    else -> null
+                }
+            }
+
+            if (requires.isNotEmpty()) {
+                builder.addInitializerBlock(CodeBlock.builder()
+                    .add("check(")
+                    .apply {
+                        add("_context.platform.%M()", requireMethods.first())
+                        requireMethods.forEach {
+                            add(" || ")
+                            add("_context.platform.%M()", it)
+                        }
+                    }
+                    .beginControlFlow(")")
+                    .add("%P", "Required a platform of one of ${requires}, but was \${_context.platform}")
+                    .endControlFlow()
+                    .build())
+            }
         }
 
         declarationTree.declaration?.let { builder.build(it, namesBuilder, current, nameLookup) }
@@ -45,7 +70,12 @@ internal object ResolvedBuilder {
         }
     }
 
-    private fun TypeSpec.Builder.build(declaration: ExportDeclaration, namesBuilder: TypeSpec.Builder, current: ClassName, nameLookup: FqNameLookup) {
+    private fun TypeSpec.Builder.build(
+        declaration: ExportDeclaration,
+        namesBuilder: TypeSpec.Builder,
+        current: ClassName,
+        nameLookup: FqNameLookup
+    ) {
         val kdoc = CodeBlock.builder()
         kdoc.addStatement("Resolved reference to `${declaration.fqName.fqName}`")
         kdoc.add("\n")
@@ -174,7 +204,12 @@ internal object ResolvedBuilder {
     private fun ExportDeclaration.Typealias.buildTypealias(builder: TypeSpec.Builder, kdoc: CodeBlock.Builder) {
     }
 
-    private fun ExportDeclaration.Class.buildClass(builder: TypeSpec.Builder, kdoc: CodeBlock.Builder, nameLookup: FqNameLookup, current: ClassName) {
+    private fun ExportDeclaration.Class.buildClass(
+        builder: TypeSpec.Builder,
+        kdoc: CodeBlock.Builder,
+        nameLookup: FqNameLookup,
+        current: ClassName
+    ) {
         if (enumNames != null) {
             kdoc.addListBlock("Enum entries", enumNames!!.map { it.first }) {
                 "[Instance.$it]"
@@ -223,7 +258,10 @@ internal object ResolvedBuilder {
             if (useVararg) "callVararg" else "call",
             "Call the constructor",
             References.IrConstructorCall,
-            CodeBlock.of("%M(this, listOf(%L))", References.irCallConstructor, classTypeParams.joinToString(", ") { it.name }),
+            CodeBlock.of(
+                "%M(this, listOf(%L))",
+                References.irCallConstructor,
+                classTypeParams.joinToString(", ") { it.name }),
             classTypeParams,
             null,
             emptyList(),
@@ -302,7 +340,9 @@ internal object ResolvedBuilder {
                 CodeBlock.of("%L", it.name) to References.IrExpression
             }
             if (it.optional) {
-                call.addParameter(ParameterSpec.builder(it.name, baseType.copy(nullable = true)).defaultValue("null").build())
+                call.addParameter(
+                    ParameterSpec.builder(it.name, baseType.copy(nullable = true)).defaultValue("null").build()
+                )
                 body.beginControlFlow("if(%L != null)", it.name)
                 body.addStatement("putValueArgument(%L, %L)", it.index, value)
                 body.endControlFlow()
@@ -360,7 +400,12 @@ internal object ResolvedBuilder {
         }
 
         if (typeParameters.isNotEmpty()) {
-            body.addStatement("type = %L.%M(%M)", irReturnType, References.substituteTypes, References.irCallTypeSubstitutionMap)
+            body.addStatement(
+                "type = %L.%M(%M)",
+                irReturnType,
+                References.substituteTypes,
+                References.irCallTypeSubstitutionMap
+            )
         } else {
             body.addStatement("type = %L", irReturnType)
         }
