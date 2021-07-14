@@ -10,7 +10,35 @@ import org.jetbrains.kotlin.compiler.plugin.AbstractCliOption
 import org.jetbrains.kotlin.compiler.plugin.CommandLineProcessor
 import org.jetbrains.kotlin.compiler.plugin.ComponentRegistrar
 import org.jetbrains.kotlin.config.CompilerConfiguration
+import org.jetbrains.kotlin.ir.IrElement
+import org.jetbrains.kotlin.ir.declarations.IrAnnotationContainer
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
+import org.jetbrains.kotlin.ir.util.dump
+import org.jetbrains.kotlin.ir.util.getAnnotation
+import org.jetbrains.kotlin.ir.visitors.IrElementVisitorVoid
+import org.jetbrains.kotlin.ir.visitors.acceptChildrenVoid
+import org.jetbrains.kotlin.ir.visitors.acceptVoid
+import org.jetbrains.kotlin.name.FqName
+import test.generation.Names
+import java.io.File
+
+private val logFile by lazy {
+    File("C:\\Users\\jimne\\Google Drive\\My Stuff\\compiler-plugin-reference\\test\\usage\\log.txt").also {
+        it.delete()
+    }
+}
+
+fun log(key: String, data: Any?) {
+    logFile.appendText("$key: $data")
+}
+
+fun log(str: Any?) {
+    logFile.appendText(str.toString())
+}
+
+fun log(key: String, ir: IrElement) {
+    logFile.appendText("$key:\n${ir.dump(true)}\n\n")
+}
 
 @AutoService(CommandLineProcessor::class)
 class PluginExportCommandLineProcessor : CommandLineProcessor {
@@ -35,7 +63,24 @@ class PluginExportComponentRegistrar : ComponentRegistrar {
 
 class PluginExportIrGenerationExtension(val messageCollector: MessageCollector) : IrGenerationExtension {
     override fun generate(moduleFragment: IrModuleFragment, pluginContext: IrPluginContext) {
+        log("Test")
         with(pluginContext) {
+            moduleFragment.acceptVoid(object : IrElementVisitorVoid {
+                override fun visitElement(element: IrElement) {
+                    if (element is IrAnnotationContainer) {
+                        element.getAnnotation(FqName("tester.second.TestAnnotation"))?.also { annotation ->
+                            log("Annotation", annotation)
+                            val instance = Names.tester.second.TestAnnotation.Instance(annotation, pluginContext)
+                            log("Instance", instance)
+
+                            //TODO too hard.  Use sealed class for enum entries, maybe?  Kind/Entries as enum, Instances as sealed that extend DelegatingSymbol/Resolved.  Annotation params as Instances.
+                            val s = instance.e == Names.tester.second.TestEnum(pluginContext).One
+                        }
+                    }
+                    element.acceptChildrenVoid(this)
+                }
+
+            })
 //            val names = Names(this)
             println()
         }

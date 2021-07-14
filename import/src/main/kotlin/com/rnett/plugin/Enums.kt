@@ -32,6 +32,8 @@ fun IrPluginContext.referenceEnumEntry(classFqName: FqName, name: Name): IrEnumE
 interface EnumInstance : AnnotationArgument {
     val name: String
     val ordinal: Int
+    val reference: EnumEntryReference<*>
+    fun resolve(context: IrPluginContext): IrEnumEntrySymbol = reference.resolveSymbol(context)
 }
 
 class EnumEntryReference<E : EnumInstance>(

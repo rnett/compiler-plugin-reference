@@ -24,6 +24,7 @@ import org.jetbrains.kotlin.ir.expressions.IrConst
 import org.jetbrains.kotlin.ir.expressions.IrConstructorCall
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.expressions.IrGetEnumValue
+import org.jetbrains.kotlin.ir.expressions.IrVararg
 import org.jetbrains.kotlin.ir.symbols.IrClassSymbol
 import org.jetbrains.kotlin.ir.symbols.IrConstructorSymbol
 import org.jetbrains.kotlin.ir.symbols.IrEnumEntrySymbol
@@ -84,7 +85,7 @@ public class Names(
 
                 public fun i(): i = i(_context)
 
-                public class Instance(
+                public data class Instance(
                     public val i: Int
                 ) {
                     public constructor(`annotation`: IrConstructorCall, context: IrPluginContext) :
@@ -252,7 +253,7 @@ public class Names(
 
                 public fun t(): t = t(_context)
 
-                public class Instance(
+                public data class Instance(
                     public val t: Int,
                     public val s: String,
                     public val e: IrEnumEntrySymbol,
@@ -287,7 +288,11 @@ public class Names(
                                                 to OpaqueConstant("test")
                                     )
                                 ),
-                                a = TODO()
+                                a = annotation.getValueArgument(6)?.cast<IrVararg>()?.let {
+                                    it.elements.map {
+                                        it!!.cast<IrConst<Int>>().let { it.value }
+                                    }
+                                } ?: listOf(1, 2, 3)
                             )
                 }
 
@@ -1522,7 +1527,7 @@ public class Names(
                 public fun testProp(): testProp = testProp(_context)
 
                 public enum class Instance(
-                    public val reference: EnumEntryReference<Instance>
+                    public override val reference: EnumEntryReference<Instance>
                 ) : EnumInstance {
                     One(EnumEntryReference<Instance>(TestEnum.fqName, {
                         Instance.One

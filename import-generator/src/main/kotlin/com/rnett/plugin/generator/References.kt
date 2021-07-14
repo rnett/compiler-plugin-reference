@@ -54,6 +54,7 @@ object References {
     val IrProperty = ClassName.bestGuess("org.jetbrains.kotlin.ir.declarations.IrProperty")
     val IrEnumEntry = ClassName.bestGuess("org.jetbrains.kotlin.ir.declarations.IrEnumEntry")
     val IrConst = ClassName.bestGuess("org.jetbrains.kotlin.ir.expressions.IrConst")
+    val IrVararg = ClassName.bestGuess("org.jetbrains.kotlin.ir.expressions.IrVararg")
     val IrGetEnumValue = ClassName.bestGuess("org.jetbrains.kotlin.ir.expressions.IrGetEnumValue")
     val IrClassReference = ClassName.bestGuess("org.jetbrains.kotlin.ir.expressions.IrClassReference")
 

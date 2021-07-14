@@ -124,6 +124,7 @@ object InstanceBuilder {
         if (this.isAnnotation) {
             val instanceType = className.nestedClass("Instance")
             val builder = TypeSpec.classBuilder("Instance")
+                .addModifiers(KModifier.DATA)
 
             val ctor = FunSpec.constructorBuilder()
             val secondary = FunSpec.constructorBuilder()
