@@ -2,22 +2,8 @@ package com.rnett.plugin.generator
 
 import com.rnett.plugin.ConstantValue
 import com.rnett.plugin.ExportDeclaration
-import com.squareup.kotlinpoet.BOOLEAN
-import com.squareup.kotlinpoet.BYTE
-import com.squareup.kotlinpoet.CHAR
-import com.squareup.kotlinpoet.ClassName
-import com.squareup.kotlinpoet.DOUBLE
-import com.squareup.kotlinpoet.FLOAT
-import com.squareup.kotlinpoet.FunSpec
-import com.squareup.kotlinpoet.INT
-import com.squareup.kotlinpoet.KModifier
-import com.squareup.kotlinpoet.LONG
-import com.squareup.kotlinpoet.NOTHING
+import com.squareup.kotlinpoet.*
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
-import com.squareup.kotlinpoet.PropertySpec
-import com.squareup.kotlinpoet.SHORT
-import com.squareup.kotlinpoet.STRING
-import com.squareup.kotlinpoet.TypeSpec
 
 internal object ReferenceBuilder {
 
@@ -76,7 +62,10 @@ internal object ReferenceBuilder {
         )
     }
 
-    private fun TypeSpec.Builder.setupDeclaration(declaration: ExportDeclaration, resolvedType: ClassName): TypeSpec.Builder = apply {
+    private fun TypeSpec.Builder.setupDeclaration(
+        declaration: ExportDeclaration,
+        resolvedType: ClassName
+    ): TypeSpec.Builder = apply {
         superclass(References.referenceType(declaration).parameterizedBy(resolvedType))
 
         addSuperclassConstructorParameter(declaration.referenceFqName.toFqName())
@@ -91,5 +80,57 @@ internal object ReferenceBuilder {
                 .addStatement("return %T(context, symbol)", resolvedType)
                 .build()
         )
+    }
+
+    fun ExportDeclaration.Class.buildEnumEntryType(resolvedType: ClassName): TypeSpec {
+        require(enumNames != null)
+        val builder = TypeSpec.enumBuilder("Entries")
+        builder.addSuperinterface(
+            References.EnumEntryReference.parameterizedBy(
+                resolvedType.nestedClass("Instance"),
+                resolvedType
+            )
+        )
+
+        builder.addProperty(
+            PropertySpec.builder("classReference", resolvedType.nestedClass("Reference"), KModifier.OVERRIDE)
+                .initializer("%T", resolvedType.nestedClass("Reference"))
+                .build()
+        )
+
+        builder.primaryConstructor(
+            FunSpec.constructorBuilder().addParameter("signature", References.IdSignaturePublicSignature).build()
+        )
+
+        builder.addProperty(
+            PropertySpec.builder("signature", References.IdSignaturePublicSignature, KModifier.OVERRIDE)
+                .initializer("signature")
+                .build()
+        )
+
+        enumNames!!.forEach { (name, sig) ->
+            builder.addEnumConstant(
+                name,
+                TypeSpec.anonymousClassBuilder().addSuperclassConstructorParameter(sig.toIdSignature()).build()
+            )
+        }
+
+        builder.addFunction(FunSpec.builder("getResolvedReference")
+            .addModifiers(KModifier.OVERRIDE)
+            .returns(resolvedType.nestedClass("Instance"))
+            .addParameter("context", References.IrPluginContext)
+            .addParameter("symbol", References.IrEnumEntrySymbol)
+            .addCode(CodeBlock.builder()
+                .beginControlFlow("return when(this) {")
+                .apply {
+                    enumNames!!.forEach { (name, _) ->
+                        addStatement("%L -> Instance.%L(symbol)", name, name)
+                    }
+                }
+                .endControlFlow()
+                .build())
+            .build())
+
+        return builder.build()
     }
 }

@@ -90,7 +90,13 @@ internal fun value(
         transform: CodeBlock,
         defaultTransform: (AnnotationArgument) -> CodeBlock = { it.value(context, classNameForFqName) }
     ): CodeBlock = if (default != null) {
-        CodeBlock.of("$argument?.%M<%L>()?.let{ %L } ?: %L", References.cast, type, transform, defaultTransform(default))
+        CodeBlock.of(
+            "$argument?.%M<%L>()?.let{ %L } ?: %L",
+            References.cast,
+            type,
+            transform,
+            defaultTransform(default)
+        )
     } else {
         CodeBlock.of("$argument!!.%M<%L>().let{ %L }", References.cast, type, transform)
     }
@@ -133,7 +139,6 @@ internal fun value(
 
 /**
  * Requires `context` in scope?
- * TODO implement
  */
 internal fun AnnotationParameter.value(
     context: String,

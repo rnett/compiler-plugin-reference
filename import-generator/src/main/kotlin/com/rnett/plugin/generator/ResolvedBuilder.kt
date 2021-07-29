@@ -3,16 +3,9 @@ package com.rnett.plugin.generator
 import com.rnett.plugin.ExportDeclaration
 import com.rnett.plugin.PlatformType
 import com.rnett.plugin.TypeString
-import com.squareup.kotlinpoet.ClassName
-import com.squareup.kotlinpoet.CodeBlock
-import com.squareup.kotlinpoet.FunSpec
-import com.squareup.kotlinpoet.KModifier
-import com.squareup.kotlinpoet.ParameterSpec
+import com.rnett.plugin.generator.ReferenceBuilder.buildEnumEntryType
+import com.squareup.kotlinpoet.*
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
-import com.squareup.kotlinpoet.PropertySpec
-import com.squareup.kotlinpoet.TypeName
-import com.squareup.kotlinpoet.TypeSpec
-import com.squareup.kotlinpoet.asTypeName
 
 internal object ResolvedBuilder {
     fun build(
@@ -213,16 +206,19 @@ internal object ResolvedBuilder {
             kdoc.addListBlock("Enum entries", enumNames!!.map { it.first }) {
                 "[Instance.$it]"
             }
-            val instanceClass = current.nestedClass("Instance")
             enumNames!!.forEachIndexed { ord, (name, _) ->
+                val instanceClass = current.nestedClass("Instance").nestedClass(name)
+                //TODO change to functions, move instance classes out of sealed parent
                 builder.addProperty(
-                    PropertySpec.builder(name, References.ResolvedEnumEntry.parameterizedBy(instanceClass))
+                    PropertySpec.builder(name, instanceClass)
                         .initializer(
-                            CodeBlock.of("%T.%L.reference(_context)", instanceClass, name)
+                            CodeBlock.of("%T(Entries.%L.resolveSymbol(_context))", instanceClass, name)
                         )
                         .build()
                 )
             }
+
+            builder.addType(buildEnumEntryType(current))
         }
 
         if (annotationProperties != null) {

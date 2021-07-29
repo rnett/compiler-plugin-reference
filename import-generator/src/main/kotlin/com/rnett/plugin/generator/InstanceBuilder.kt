@@ -1,15 +1,8 @@
 package com.rnett.plugin.generator
 
 import com.rnett.plugin.ExportDeclaration
-import com.squareup.kotlinpoet.ClassName
-import com.squareup.kotlinpoet.CodeBlock
-import com.squareup.kotlinpoet.FunSpec
-import com.squareup.kotlinpoet.KModifier
-import com.squareup.kotlinpoet.MemberName
+import com.squareup.kotlinpoet.*
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
-import com.squareup.kotlinpoet.PropertySpec
-import com.squareup.kotlinpoet.TypeName
-import com.squareup.kotlinpoet.TypeSpec
 
 typealias TypeAndFuncs = Pair<TypeSpec, List<FunSpec>>?
 
@@ -64,35 +57,31 @@ object InstanceBuilder {
     ): TypeAndFuncs {
         enumNames?.let { enumNames ->
             val instanceType = className.nestedClass("Instance")
-            val referenceType = References.EnumEntryReference.parameterizedBy(instanceType)
-            val instanceBuilder = TypeSpec.enumBuilder("Instance").apply {
-                addSuperinterface(References.EnumInstance)
+            val instanceBuilder = TypeSpec.classBuilder("Instance").apply {
+                addModifiers(KModifier.SEALED)
+                superclass(References.ResolvedEnumEntry.parameterizedBy(instanceType))
+
                 primaryConstructor(
                     FunSpec.constructorBuilder()
-                        .addParameter("reference", referenceType)
-                        .build()
-                )
-                addProperty(
-                    PropertySpec.builder("reference", referenceType)
-                        .initializer("reference")
+                        .addParameter("entry", className.nestedClass("Entries"))
+                        .addParameter("symbol", References.IrEnumEntrySymbol)
                         .build()
                 )
 
-                enumNames.forEach { (name, sig) ->
-                    addEnumConstant(
-                        name, TypeSpec.anonymousClassBuilder()
-                            .addSuperclassConstructorParameter(
-                                CodeBlock.builder()
-                                    .add("%T(", referenceType)
-                                    .add("%T.fqName, ", className)
-                                    .beginControlFlow("")
-                                    .add("%T.%L", instanceType, name)
-                                    .endControlFlow()
-                                    .add(", %L", sig.toIdSignature())
-                                    .add(")")
+                addSuperclassConstructorParameter("entry, symbol")
+
+                enumNames.forEach { (name, _) ->
+                    addType(
+                        TypeSpec.classBuilder(name).apply {
+                            primaryConstructor(
+                                FunSpec.constructorBuilder()
+                                    .addParameter("symbol", References.IrEnumEntrySymbol)
                                     .build()
                             )
-                            .build()
+                            superclass(instanceType)
+                            addSuperclassConstructorParameter("%T", className.nestedClass("Entries").nestedClass(name))
+                            addSuperclassConstructorParameter("symbol")
+                        }.build()
                     )
                 }
             }

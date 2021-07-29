@@ -1,45 +1,18 @@
 // GENERATED, DO NOT EDIT
 package test.generation
 
-import com.rnett.plugin.ClassReference
-import com.rnett.plugin.ConstructorReference
-import com.rnett.plugin.EnumEntryReference
-import com.rnett.plugin.EnumInstance
-import com.rnett.plugin.OpaqueAnnotationInstance
-import com.rnett.plugin.OpaqueConstant
-import com.rnett.plugin.PropertyReference
-import com.rnett.plugin.ResolvedClass
-import com.rnett.plugin.ResolvedConstructor
-import com.rnett.plugin.ResolvedEnumEntry
-import com.rnett.plugin.ResolvedProperty
-import com.rnett.plugin.referenceEnumEntry
+import com.rnett.plugin.*
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.ir.builders.IrBuilderWithScope
 import org.jetbrains.kotlin.ir.builders.irCall
 import org.jetbrains.kotlin.ir.builders.irCallConstructor
 import org.jetbrains.kotlin.ir.declarations.IrProperty
-import org.jetbrains.kotlin.ir.expressions.IrCall
-import org.jetbrains.kotlin.ir.expressions.IrClassReference
-import org.jetbrains.kotlin.ir.expressions.IrConst
-import org.jetbrains.kotlin.ir.expressions.IrConstructorCall
-import org.jetbrains.kotlin.ir.expressions.IrExpression
-import org.jetbrains.kotlin.ir.expressions.IrGetEnumValue
-import org.jetbrains.kotlin.ir.expressions.IrVararg
-import org.jetbrains.kotlin.ir.symbols.IrClassSymbol
-import org.jetbrains.kotlin.ir.symbols.IrConstructorSymbol
-import org.jetbrains.kotlin.ir.symbols.IrEnumEntrySymbol
-import org.jetbrains.kotlin.ir.symbols.IrFieldSymbol
-import org.jetbrains.kotlin.ir.symbols.IrPropertySymbol
-import org.jetbrains.kotlin.ir.symbols.IrSimpleFunctionSymbol
+import org.jetbrains.kotlin.ir.expressions.*
+import org.jetbrains.kotlin.ir.symbols.*
 import org.jetbrains.kotlin.ir.types.IrSimpleType
 import org.jetbrains.kotlin.ir.types.IrType
 import org.jetbrains.kotlin.ir.types.typeWith
-import org.jetbrains.kotlin.ir.util.IdSignature
-import org.jetbrains.kotlin.ir.util.constructedClassType
-import org.jetbrains.kotlin.ir.util.hasEqualFqName
-import org.jetbrains.kotlin.ir.util.isGetter
-import org.jetbrains.kotlin.ir.util.isSetter
-import org.jetbrains.kotlin.ir.util.parentAsClass
+import org.jetbrains.kotlin.ir.util.*
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.utils.addToStdlib.cast
@@ -1516,29 +1489,52 @@ public class Names(
                  */
                 public val type: IrSimpleType = owner.typeWith()
 
-                public val One: ResolvedEnumEntry<Instance> = Instance.One.reference(_context)
+                public val One: Instance.One = Instance.One(Entries.One.resolveSymbol(_context))
 
-                public val Two: ResolvedEnumEntry<Instance> = Instance.Two.reference(_context)
+                public val Two: Instance.Two = Instance.Two(Entries.Two.resolveSymbol(_context))
 
-                public val Three: ResolvedEnumEntry<Instance> = Instance.Three.reference(_context)
+                public val Three: Instance.Three =
+                    Instance.Three(Entries.Three.resolveSymbol(_context))
 
                 public constructor(context: IrPluginContext) : this(context, resolveSymbol(context))
 
                 public fun testProp(): testProp = testProp(_context)
 
-                public enum class Instance(
-                    public override val reference: EnumEntryReference<Instance>
-                ) : EnumInstance {
-                    One(EnumEntryReference<Instance>(TestEnum.fqName, {
-                        Instance.One
-                    }, IdSignature.PublicSignature("tester.second", "TestEnum.One", null, 0))),
-                    Two(EnumEntryReference<Instance>(TestEnum.fqName, {
-                        Instance.Two
-                    }, IdSignature.PublicSignature("tester.second", "TestEnum.Two", null, 0))),
-                    Three(EnumEntryReference<Instance>(TestEnum.fqName, {
-                        Instance.Three
-                    }, IdSignature.PublicSignature("tester.second", "TestEnum.Three", null, 0))),
+                public enum class Entries(
+                    public override val signature: IdSignature.PublicSignature
+                ) : EnumEntryReference<Instance, TestEnum> {
+                    One(IdSignature.PublicSignature("tester.second", "TestEnum.One", null, 0)),
+                    Two(IdSignature.PublicSignature("tester.second", "TestEnum.Two", null, 0)),
+                    Three(IdSignature.PublicSignature("tester.second", "TestEnum.Three", null, 0)),
                     ;
+
+                    public override val classReference: Reference = Reference
+
+                    public override fun getResolvedReference(
+                        context: IrPluginContext,
+                        symbol: IrEnumEntrySymbol
+                    ): Instance = when (this) {
+                        One -> Instance.One(symbol)
+                        Two -> Instance.Two(symbol)
+                        Three -> Instance.Three(symbol)
+                    }
+                }
+
+                public sealed class Instance(
+                    entry: Entries,
+                    symbol: IrEnumEntrySymbol
+                ) : ResolvedEnumEntry<Instance>(entry, symbol) {
+                    public class One(
+                        symbol: IrEnumEntrySymbol
+                    ) : Instance(Entries.One, symbol)
+
+                    public class Two(
+                        symbol: IrEnumEntrySymbol
+                    ) : Instance(Entries.Two, symbol)
+
+                    public class Three(
+                        symbol: IrEnumEntrySymbol
+                    ) : Instance(Entries.Three, symbol)
                 }
 
                 /**
