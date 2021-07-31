@@ -1,13 +1,7 @@
 package com.rnett.plugin
 
 import org.jetbrains.kotlin.ir.declarations.IrEnumEntry
-import org.jetbrains.kotlin.ir.expressions.IrClassReference
-import org.jetbrains.kotlin.ir.expressions.IrConst
-import org.jetbrains.kotlin.ir.expressions.IrConstructorCall
-import org.jetbrains.kotlin.ir.expressions.IrExpression
-import org.jetbrains.kotlin.ir.expressions.IrFunctionAccessExpression
-import org.jetbrains.kotlin.ir.expressions.IrGetEnumValue
-import org.jetbrains.kotlin.ir.expressions.IrVararg
+import org.jetbrains.kotlin.ir.expressions.*
 import org.jetbrains.kotlin.ir.types.classFqName
 import org.jetbrains.kotlin.ir.util.constructedClass
 import org.jetbrains.kotlin.ir.util.dump
@@ -46,6 +40,7 @@ data class OpaqueAnnotationInstance(val fqName: FqName, val arguments: Map<Strin
         })
 }
 
+//TODO use symbol!  I have context available when creating defaults, would need to pass to AnnotationArgument, etc
 data class OpaqueEnumEntry(val classFqName: FqName, val name: String, val ordinal: Int) : AnnotationArgument
 
 data class OpaqueClassRef(val fqName: FqName) : AnnotationArgument

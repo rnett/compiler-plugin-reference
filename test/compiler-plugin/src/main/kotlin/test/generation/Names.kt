@@ -59,13 +59,7 @@ public class Names(
 
                 public data class Instance(
                     public val i: Int
-                ) {
-                    public constructor(`annotation`: IrConstructorCall, context: IrPluginContext) :
-                            this(i = annotation.getValueArgument(0)!!.cast<IrConst<Int>>().let {
-                                it.value
-                            }
-                            )
-                }
+                )
 
                 /**
                  * Resolved reference to `tester.second.ExportedAnnotation.i`
@@ -182,8 +176,11 @@ public class Names(
                 public companion object Reference :
                     ClassReference<ExportedAnnotation>(
                         FqName("tester.second.ExportedAnnotation"),
-                        IdSignature.PublicSignature("tester.second", "ExportedAnnotation", null, 0)
-                    ) {
+                        IdSignature.PublicSignature(
+                            "tester.second", "ExportedAnnotation", null,
+                            0
+                        )
+                    ), SingleAnnotationReference<Instance> {
                     public val i: i.Reference = ExportedAnnotation.i.Reference
 
                     public override fun getResolvedReference(
@@ -193,6 +190,23 @@ public class Names(
                         context,
                         symbol
                     )
+
+                    public override operator fun invoke(
+                        `annotation`: IrConstructorCall,
+                        context: IrPluginContext
+                    ): Instance {
+                        val ctorSig = annotation.symbol.owner.parentAsClass.symbol.signature
+                        require(ctorSig == signature) {
+                            """Constructor call has different IdSignature than exported for "$fqName": $ctorSig"""
+                        }
+                        return Instance(i =
+                        annotation.getValueArgument(0)!!.cast<IrConst<Int>>().let {
+                            it.value
+                        }
+                        )
+                    }
+
+                    public operator fun invoke(i: Int) = Instance(i = i)
                 }
             }
 
@@ -233,38 +247,7 @@ public class Names(
                     public val r: ExportedAnnotation.Instance,
                     public val n: OpaqueAnnotationInstance,
                     public val a: List<Int>
-                ) {
-                    public constructor(`annotation`: IrConstructorCall, context: IrPluginContext) :
-                            this(t = annotation.getValueArgument(0)?.cast<IrConst<Int>>()?.let {
-                                it.value
-                            } ?: 2,
-                                s = annotation.getValueArgument(1)?.cast<IrConst<String>>()?.let { it.value }
-                                    ?: "test",
-                                e = annotation.getValueArgument(2)?.cast<IrGetEnumValue>()?.let {
-                                    TestEnum.instance(it)
-                                } ?: TestEnum.Two(context),
-                                c = annotation.getValueArgument(3)?.cast<IrClassReference>()?.let {
-                                    it.symbol
-                                            as IrClassSymbol
-                                } ?: context.referenceClass(FqName("tester.second.TestClass"))!!,
-                                r = annotation.getValueArgument(4)?.cast<IrConstructorCall>()?.let {
-                                    ExportedAnnotation.Instance(it, context)
-                                } ?: ExportedAnnotation.Instance(i = 2),
-                                n = annotation.getValueArgument(5)?.cast<IrConstructorCall>()?.let {
-                                    OpaqueAnnotationInstance(it)
-                                } ?: OpaqueAnnotationInstance(
-                                    FqName("tester.second.NonExported"), mapOf(
-                                        "s"
-                                                to OpaqueConstant("test")
-                                    )
-                                ),
-                                a = annotation.getValueArgument(6)?.cast<IrVararg>()?.let {
-                                    it.elements.map {
-                                        it!!.cast<IrConst<Int>>().let { it.value }
-                                    }
-                                } ?: listOf(1, 2, 3)
-                            )
-                }
+                )
 
                 /**
                  * Resolved reference to `tester.second.TestAnnotation.a`
@@ -1054,7 +1037,8 @@ public class Names(
                     ClassReference<TestAnnotation>(
                         FqName("tester.second.TestAnnotation"),
                         IdSignature.PublicSignature("tester.second", "TestAnnotation", null, 0)
-                    ) {
+                    ),
+                    SingleAnnotationReference<Instance> {
                     public val a: a.Reference = TestAnnotation.a.Reference
 
                     public val c: c.Reference = TestAnnotation.c.Reference
@@ -1073,6 +1057,57 @@ public class Names(
                         context: IrPluginContext,
                         symbol: IrClassSymbol
                     ): TestAnnotation = TestAnnotation(context, symbol)
+
+                    public override operator fun invoke(
+                        `annotation`: IrConstructorCall,
+                        context: IrPluginContext
+                    ): Instance {
+                        val ctorSig = annotation.symbol.owner.parentAsClass.symbol.signature
+                        require(ctorSig == signature) {
+                            """Constructor call has different IdSignature than exported for "$fqName": $ctorSig"""
+                        }
+                        return Instance(t =
+                        annotation.getValueArgument(0)?.cast<IrConst<Int>>()?.let {
+                            it.value
+                        } ?: 2,
+                            s = annotation.getValueArgument(1)?.cast<IrConst<String>>()?.let {
+                                it.value
+                            } ?: "test",
+                            e = annotation.getValueArgument(2)?.cast<IrGetEnumValue>()?.let {
+                                TestEnum.instance(it)
+                            } ?: TestEnum.Two(context),
+                            c = annotation.getValueArgument(3)?.cast<IrClassReference>()?.let {
+                                it.symbol as IrClassSymbol
+                            } ?: context.referenceClass(FqName("tester.second.TestClass"))!!,
+                            r = annotation.getValueArgument(4)?.cast<IrConstructorCall>()?.let {
+                                ExportedAnnotation(it, context)
+                            } ?: ExportedAnnotation(
+                                i =
+                                2
+                            ),
+                            n = annotation.getValueArgument(5)?.cast<IrConstructorCall>()?.let {
+                                OpaqueAnnotationInstance(it)
+                            } ?: OpaqueAnnotationInstance(
+                                FqName("tester.second.NonExported"),
+                                mapOf("s" to OpaqueConstant("test"))
+                            ),
+                            a = annotation.getValueArgument(6)?.cast<IrVararg>()?.let {
+                                it.elements.map {
+                                    it!!.cast<IrConst<Int>>().let { it.value }
+                                }
+                            } ?: listOf(1, 2, 3)
+                        )
+                    }
+
+                    public operator fun invoke(
+                        t: Int,
+                        s: String,
+                        e: TestEnum.Instance,
+                        c: IrClassSymbol,
+                        r: ExportedAnnotation.Instance,
+                        n: OpaqueAnnotationInstance,
+                        a: List<Int>
+                    ) = Instance(t = t, s = s, e = e, c = c, r = r, n = n, a = a)
                 }
             }
 
@@ -1516,24 +1551,32 @@ public class Names(
                         context: IrPluginContext,
                         symbol: IrEnumEntrySymbol
                     ): Instance = instance(symbol)
+
+                    public override fun toString(): String = """TestEnum.$name"""
                 }
 
-                public class One(
-                    symbol: IrEnumEntrySymbol
+                public data class One(
+                    public override val symbol: IrEnumEntrySymbol
                 ) : Instance(Entries.One, symbol) {
                     public constructor(context: IrPluginContext) : this(Entries.One(context))
+
+                    public override fun toString(): String = """TestEnum.One(symbol=$symbol)"""
                 }
 
-                public class Two(
-                    symbol: IrEnumEntrySymbol
+                public data class Two(
+                    public override val symbol: IrEnumEntrySymbol
                 ) : Instance(Entries.Two, symbol) {
                     public constructor(context: IrPluginContext) : this(Entries.Two(context))
+
+                    public override fun toString(): String = """TestEnum.Two(symbol=$symbol)"""
                 }
 
-                public class Three(
-                    symbol: IrEnumEntrySymbol
+                public data class Three(
+                    public override val symbol: IrEnumEntrySymbol
                 ) : Instance(Entries.Three, symbol) {
                     public constructor(context: IrPluginContext) : this(Entries.Three(context))
+
+                    public override fun toString(): String = """TestEnum.Three(symbol=$symbol)"""
                 }
 
                 public sealed class Instance(
@@ -1541,7 +1584,7 @@ public class Names(
                     symbol: IrEnumEntrySymbol
                 ) : ResolvedEnumEntry<Instance>(entry, symbol) {
                     init {
-                        check(entry.signature == symbol.signature) {
+                        require(entry.signature == symbol.signature) {
                             """Symbol's signature does not match entry $entry"""
                         }
                     }

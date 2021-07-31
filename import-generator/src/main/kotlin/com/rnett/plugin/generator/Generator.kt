@@ -73,7 +73,7 @@ object PluginImportGenerator {
     private fun generate(fqName: ClassName, declarationTree: DeclarationTree, lookup: FqNameLookup): TypeSpec {
         val builder = TypeSpec.classBuilder(fqName.simpleNames.last())
 
-        val namesBuilder = ReferenceBuilder.referenceObject(declarationTree, fqName).toBuilder()
+        val namesBuilder = ReferenceBuilder.referenceObject(declarationTree, fqName, lookup).toBuilder()
         ResolvedBuilder.build(builder, namesBuilder, fqName, lookup, declarationTree)
 
         declarationTree.children.forEach {

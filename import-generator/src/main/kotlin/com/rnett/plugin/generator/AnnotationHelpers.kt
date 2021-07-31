@@ -78,7 +78,7 @@ internal fun AnnotationArgument.defaultValue(
             "%T($context)",
             classNameForFqName(classFqName).nestedClass(name)
         )
-        is AnnotationArgument.ExportedAnnotation -> CodeBlock.of("%T.Instance(${
+        is AnnotationArgument.ExportedAnnotation -> CodeBlock.of("%T(${
             arguments.toList().joinToString(", ") {
                 "${it.first} = ${it.second.defaultValue(context, classNameForFqName)}"
             }
@@ -140,7 +140,7 @@ internal fun value(
         )
         is AnnotationArgument.Kind.ExportedAnnotation -> standard(
             CodeBlock.of("%T", References.IrConstructorCall),
-            CodeBlock.of("%T.Instance(it, context)", classNameForFqName(kind.fqName))
+            CodeBlock.of("%T(it, context)", classNameForFqName(kind.fqName))
         )
         is AnnotationArgument.Kind.OpaqueAnnotation -> standard(
             CodeBlock.of("%T", References.IrConstructorCall),

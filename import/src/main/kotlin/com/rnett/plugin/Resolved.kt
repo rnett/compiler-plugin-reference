@@ -7,7 +7,7 @@ import org.jetbrains.kotlin.ir.types.IrType
 import org.jetbrains.kotlin.name.FqName
 
 sealed class ResolvedReference<S : IrBindableSymbol<D, T>, T : IrDeclaration, D : DeclarationDescriptor>(
-    val symbol: S,
+    open val symbol: S,
     val fqName: FqName
 ) :
     IrDelegatingSymbol<S, T, D>(symbol)

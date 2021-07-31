@@ -9,19 +9,19 @@ internal object ReferenceBuilder {
 
     private const val objectName = "Reference"
 
-    fun referenceObject(declarationTree: DeclarationTree, fqName: ClassName): TypeSpec {
+    fun referenceObject(declarationTree: DeclarationTree, resolvedType: ClassName, nameLookup: FqNameLookup): TypeSpec {
         val builder = TypeSpec.companionObjectBuilder(objectName)
 
-        declarationTree.declaration?.let { builder.setupDeclaration(it, fqName) }
+        declarationTree.declaration?.let { builder.setupDeclaration(it, resolvedType) }
 
         if (declarationTree is DeclarationTree.Package)
-            builder.setupPackage(fqName)
+            builder.setupPackage(resolvedType)
 
         declarationTree.children.forEach {
-            val nameClass = fqName.nestedClass(it.displayName).nestedClass(objectName)
+            val nameClass = resolvedType.nestedClass(it.displayName).nestedClass(objectName)
             builder.addProperty(
                 PropertySpec.builder(it.displayName, nameClass)
-                    .initializer("%L.%L.%L", fqName.simpleNames.last(), it.displayName, objectName)
+                    .initializer("%L.%L.%L", resolvedType.simpleNames.last(), it.displayName, objectName)
                     .build()
             )
         }
@@ -49,7 +49,67 @@ internal object ReferenceBuilder {
             )
         }
 
+        if (declaration is ExportDeclaration.Class && declaration.annotationProperties != null) {
+            declaration.buildAnnotationRef(builder, resolvedType, nameLookup)
+        }
+
         return builder.build()
+    }
+
+    private fun ExportDeclaration.Class.buildAnnotationRef(
+        builder: TypeSpec.Builder,
+        resolvedType: ClassName,
+        nameLookup: FqNameLookup
+    ) {
+        val instanceType = resolvedType.nestedClass("Instance")
+        if (repeatableAnnotation) {
+            builder.addSuperinterface(References.RepeatableAnnotationReference.parameterizedBy(instanceType))
+        } else {
+            builder.addSuperinterface(References.SingleAnnotationReference.parameterizedBy(instanceType))
+        }
+        val createFromCtorCall = FunSpec.builder("invoke")
+            .addModifiers(KModifier.OPERATOR, KModifier.OVERRIDE)
+            .returns(instanceType)
+            .addParameter("annotation", References.IrConstructorCall)
+            .addParameter("context", References.IrPluginContext)
+
+        createFromCtorCall.addStatement(
+            "val ctorSig = annotation.symbol.owner.%M.symbol.signature",
+            References.parentAsClass
+        )
+        createFromCtorCall.beginControlFlow("require(ctorSig == signature)")
+        createFromCtorCall.addStatement(
+            "%P",
+            "Constructor call has different IdSignature than exported for \"\$fqName\": \$ctorSig"
+        )
+        createFromCtorCall.endControlFlow()
+
+        createFromCtorCall.addStatement(
+            "return %T(%L)",
+            instanceType,
+            CodeBlock.builder().apply {
+                annotationProperties!!.entries.forEachIndexed { i, it ->
+                    add(
+                        "%L = %L${if (i != annotationProperties!!.size - 1) "," else ""}\n",
+                        it.key,
+                        it.value.value("context", "annotation", nameLookup::getClassNameForFqName)
+                    )
+                }
+            }.build()
+        )
+        builder.addFunction(createFromCtorCall.build())
+
+        val createInstance = FunSpec.builder("invoke")
+            .addModifiers(KModifier.OPERATOR)
+        createInstance.addCode("return Instance(")
+        annotationProperties!!.entries.forEachIndexed { i, it ->
+            createInstance.addParameter(it.key, it.value.kind.valueType(nameLookup::getClassNameForFqName))
+            createInstance.addCode("${it.key} = ${it.key}" + if (i != annotationProperties!!.size - 1) ", " else "")
+        }
+        createInstance.addCode(")")
+
+        builder.addFunction(createInstance.build())
+        //TODO move annotation Instance secondary constructor here, make check IrConstructorCall IdSignature
     }
 
     private fun TypeSpec.Builder.setupPackage(resolvedType: ClassName): TypeSpec.Builder = apply {
@@ -136,6 +196,14 @@ internal object ReferenceBuilder {
                 .addParameter("context", References.IrPluginContext)
                 .addParameter("symbol", References.IrEnumEntrySymbol)
                 .addCode("return instance(symbol)")
+                .build()
+        )
+
+        builder.addFunction(
+            FunSpec.builder("toString")
+                .addModifiers(KModifier.OVERRIDE)
+                .returns(STRING)
+                .addStatement("return %P", "${resolvedType.simpleName}.\$name")
                 .build()
         )
 

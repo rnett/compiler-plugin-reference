@@ -1,6 +1,7 @@
 package test
 
 import com.google.auto.service.AutoService
+import com.rnett.plugin.get
 import org.jetbrains.kotlin.backend.common.extensions.IrGenerationExtension
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.cli.common.CLIConfigurationKeys
@@ -14,11 +15,9 @@ import org.jetbrains.kotlin.ir.IrElement
 import org.jetbrains.kotlin.ir.declarations.IrAnnotationContainer
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
 import org.jetbrains.kotlin.ir.util.dump
-import org.jetbrains.kotlin.ir.util.getAnnotation
 import org.jetbrains.kotlin.ir.visitors.IrElementVisitorVoid
 import org.jetbrains.kotlin.ir.visitors.acceptChildrenVoid
 import org.jetbrains.kotlin.ir.visitors.acceptVoid
-import org.jetbrains.kotlin.name.FqName
 import test.generation.Names.tester.second.TestAnnotation
 import test.generation.Names.tester.second.TestEnum
 import java.io.File
@@ -69,9 +68,7 @@ class PluginExportIrGenerationExtension(val messageCollector: MessageCollector) 
             moduleFragment.acceptVoid(object : IrElementVisitorVoid {
                 override fun visitElement(element: IrElement) {
                     if (element is IrAnnotationContainer) {
-                        element.getAnnotation(FqName("tester.second.TestAnnotation"))?.also { annotation ->
-                            log("Annotation", annotation)
-                            val instance = TestAnnotation.Instance(annotation, pluginContext)
+                        element[TestAnnotation, pluginContext]?.let { instance ->
                             log("Instance", instance)
 
                             //TODO too hard.  Use sealed class for enum entries, maybe?  Kind/Entries as enum, Instances as sealed that extend DelegatingSymbol/Resolved.  Annotation params as Instances.

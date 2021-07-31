@@ -83,6 +83,8 @@ object References {
     val parentAsClass = MemberName("org.jetbrains.kotlin.ir.util", "parentAsClass")
 
     val AnnotationArgument = MemberName("com.rnett.plugin", "AnnotationArgument")
+    val RepeatableAnnotationReference = ClassName("com.rnett.plugin", "RepeatableAnnotationReference")
+    val SingleAnnotationReference = ClassName("com.rnett.plugin", "SingleAnnotationReference")
 
     fun referenceType(declaration: ExportDeclaration): ClassName = when (declaration) {
         is ExportDeclaration.Class -> ClassReference

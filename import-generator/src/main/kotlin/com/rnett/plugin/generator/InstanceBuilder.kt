@@ -54,6 +54,7 @@ object InstanceBuilder {
     fun ExportDeclaration.Class.buildEnumEntries(className: ClassName): List<TypeSpec> {
         return enumNames!!.map { (name, _) ->
             TypeSpec.classBuilder(name).apply {
+                addModifiers(KModifier.DATA)
                 primaryConstructor(
                     FunSpec.constructorBuilder()
                         .addParameter("symbol", References.IrEnumEntrySymbol)
@@ -72,6 +73,21 @@ object InstanceBuilder {
                                 className.nestedClass("Entries").nestedClass(name)
                             )
                         )
+                        .build()
+                )
+
+                addProperty(
+                    PropertySpec.builder("symbol", References.IrEnumEntrySymbol)
+                        .initializer("symbol")
+                        .addModifiers(KModifier.OVERRIDE)
+                        .build()
+                )
+
+                addFunction(
+                    FunSpec.builder("toString")
+                        .addModifiers(KModifier.OVERRIDE)
+                        .returns(STRING)
+                        .addCode("return %P", "${className.simpleName}.$name(symbol=\$symbol)")
                         .build()
                 )
 
@@ -101,7 +117,7 @@ object InstanceBuilder {
 
                 addInitializerBlock(
                     CodeBlock.builder()
-                        .beginControlFlow("check(entry.signature == symbol.signature)")
+                        .beginControlFlow("require(entry.signature == symbol.signature)")
                         .addStatement("%P", "Symbol's signature does not match entry ${'$'}entry")
                         .endControlFlow()
                         .build()
@@ -178,14 +194,10 @@ object InstanceBuilder {
         }
 
         if (this.isAnnotation) {
-            val instanceType = className.nestedClass("Instance")
             val builder = TypeSpec.classBuilder("Instance")
                 .addModifiers(KModifier.DATA)
 
             val ctor = FunSpec.constructorBuilder()
-            val secondary = FunSpec.constructorBuilder()
-                .addParameter("annotation", References.IrConstructorCall)
-                .addParameter("context", References.IrPluginContext)
 
             annotationProperties!!.forEach {
                 //TODO pass platform
@@ -198,16 +210,7 @@ object InstanceBuilder {
                 )
             }
 
-            secondary.callThisConstructor(annotationProperties!!.map {
-                CodeBlock.of(
-                    "%L = %L\n",
-                    it.key,
-                    it.value.value("context", "annotation", nameLookup::getClassNameForFqName)
-                )
-            })
-
             builder.primaryConstructor(ctor.build())
-            builder.addFunction(secondary.build())
 
             return builder.build() to emptyList()
         }

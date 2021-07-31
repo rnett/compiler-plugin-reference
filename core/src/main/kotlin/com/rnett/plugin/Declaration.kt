@@ -131,6 +131,7 @@ sealed class ExportDeclaration {
         val typeParameters: List<TypeParameter>,
         val enumNames: List<Pair<String, Signature>>?,
         val annotationProperties: Map<String, AnnotationParameter>?,
+        val repeatableAnnotation: Boolean,
         override val customName: String? = null
     ) : ExportDeclaration() {
         val isAnnotation get() = annotationProperties != null

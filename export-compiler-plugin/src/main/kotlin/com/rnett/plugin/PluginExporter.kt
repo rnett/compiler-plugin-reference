@@ -19,6 +19,7 @@ import org.jetbrains.kotlin.ir.symbols.IrScriptSymbol
 import org.jetbrains.kotlin.ir.symbols.IrTypeParameterSymbol
 import org.jetbrains.kotlin.ir.types.*
 import org.jetbrains.kotlin.ir.util.*
+import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.resolve.multiplatform.findExpects
 import org.jetbrains.kotlin.types.KotlinType
@@ -275,12 +276,17 @@ class PluginExporter(
             }
         } else null
 
+        val isRepeatableAnnotation = if (isAnnotationClass) {
+            hasAnnotation(FqName("kotlin.annotation.Repeatable")) || hasAnnotation(FqName("java.lang.annotation.Repeatable"))
+        } else false
+
         return ExportDeclaration.Class(
             resolvedName,
             publicSignature,
             typeParameters.map { it.toTypeParameter() },
             enumNames,
             annotationParams,
+            isRepeatableAnnotation,
             displayName
         )
     }
