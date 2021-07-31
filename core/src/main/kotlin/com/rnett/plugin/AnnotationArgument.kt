@@ -23,7 +23,10 @@ sealed class AnnotationArgument(val kind: Kind) {
         data class Array(val elementKind: Kind) : Kind()
 
         @Serializable
-        object Enum : Kind()
+        data class ExportedEnum(val classFqName: ResolvedName) : Kind()
+
+        @Serializable
+        object OpaqueEnum : Kind()
 
         @Serializable
         object ClassRef : Kind()
@@ -59,8 +62,25 @@ sealed class AnnotationArgument(val kind: Kind) {
         }
     }
 
+    sealed interface Enum {
+        val classFqName: ResolvedName
+        val name: String
+        val ordinal: Int
+    }
+
     @Serializable
-    data class Enum(val classFqName: ResolvedName, val name: String, val ordinal: Int) : AnnotationArgument(Kind.Enum)
+    data class ExportedEnum(
+        override val classFqName: ResolvedName,
+        override val name: String,
+        override val ordinal: Int
+    ) : AnnotationArgument(Kind.ExportedEnum(classFqName)), Enum
+
+    @Serializable
+    data class OpaqueEnum(
+        override val classFqName: ResolvedName,
+        override val name: String,
+        override val ordinal: Int
+    ) : AnnotationArgument(Kind.OpaqueEnum), Enum
 
     @Serializable
     data class ClassRef(val fqName: ResolvedName) : AnnotationArgument(Kind.ClassRef)

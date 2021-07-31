@@ -14,7 +14,6 @@ import org.jetbrains.kotlin.ir.types.IrType
 import org.jetbrains.kotlin.ir.types.typeWith
 import org.jetbrains.kotlin.ir.util.*
 import org.jetbrains.kotlin.name.FqName
-import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.utils.addToStdlib.cast
 import test.generation.Names.tester.second.TestEnum.*
 
@@ -229,7 +228,7 @@ public class Names(
                 public data class Instance(
                     public val t: Int,
                     public val s: String,
-                    public val e: IrEnumEntrySymbol,
+                    public val e: TestEnum.Instance,
                     public val c: IrClassSymbol,
                     public val r: ExportedAnnotation.Instance,
                     public val n: OpaqueAnnotationInstance,
@@ -241,11 +240,9 @@ public class Names(
                             } ?: 2,
                                 s = annotation.getValueArgument(1)?.cast<IrConst<String>>()?.let { it.value }
                                     ?: "test",
-                                e = annotation.getValueArgument(2)?.cast<IrGetEnumValue>()?.let { it.symbol }
-                                    ?: context.referenceEnumEntry(
-                                        FqName("tester.second.TestEnum"),
-                                        Name.identifier("Two")
-                                    )!!,
+                                e = annotation.getValueArgument(2)?.cast<IrGetEnumValue>()?.let {
+                                    TestEnum.instance(it)
+                                } ?: TestEnum.Two(context),
                                 c = annotation.getValueArgument(3)?.cast<IrClassReference>()?.let {
                                     it.symbol
                                             as IrClassSymbol
@@ -1523,15 +1520,21 @@ public class Names(
 
                 public class One(
                     symbol: IrEnumEntrySymbol
-                ) : Instance(Entries.One, symbol)
+                ) : Instance(Entries.One, symbol) {
+                    public constructor(context: IrPluginContext) : this(Entries.One(context))
+                }
 
                 public class Two(
                     symbol: IrEnumEntrySymbol
-                ) : Instance(Entries.Two, symbol)
+                ) : Instance(Entries.Two, symbol) {
+                    public constructor(context: IrPluginContext) : this(Entries.Two(context))
+                }
 
                 public class Three(
                     symbol: IrEnumEntrySymbol
-                ) : Instance(Entries.Three, symbol)
+                ) : Instance(Entries.Three, symbol) {
+                    public constructor(context: IrPluginContext) : this(Entries.Three(context))
+                }
 
                 public sealed class Instance(
                     entry: Entries,

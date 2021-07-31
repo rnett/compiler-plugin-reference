@@ -19,7 +19,8 @@ import org.jetbrains.kotlin.ir.visitors.IrElementVisitorVoid
 import org.jetbrains.kotlin.ir.visitors.acceptChildrenVoid
 import org.jetbrains.kotlin.ir.visitors.acceptVoid
 import org.jetbrains.kotlin.name.FqName
-import test.generation.Names
+import test.generation.Names.tester.second.TestAnnotation
+import test.generation.Names.tester.second.TestEnum
 import java.io.File
 
 private val logFile by lazy {
@@ -70,11 +71,11 @@ class PluginExportIrGenerationExtension(val messageCollector: MessageCollector) 
                     if (element is IrAnnotationContainer) {
                         element.getAnnotation(FqName("tester.second.TestAnnotation"))?.also { annotation ->
                             log("Annotation", annotation)
-                            val instance = Names.tester.second.TestAnnotation.Instance(annotation, pluginContext)
+                            val instance = TestAnnotation.Instance(annotation, pluginContext)
                             log("Instance", instance)
 
                             //TODO too hard.  Use sealed class for enum entries, maybe?  Kind/Entries as enum, Instances as sealed that extend DelegatingSymbol/Resolved.  Annotation params as Instances.
-                            val s = instance.e == Names.tester.second.TestEnum(pluginContext).One
+                            val s = instance.e is TestEnum.One
                         }
                     }
                     element.acceptChildrenVoid(this)

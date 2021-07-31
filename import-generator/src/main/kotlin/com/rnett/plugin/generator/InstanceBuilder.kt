@@ -62,6 +62,19 @@ object InstanceBuilder {
                 superclass(className.nestedClass("Instance"))
                 addSuperclassConstructorParameter("%T", className.nestedClass("Entries").nestedClass(name))
                 addSuperclassConstructorParameter("symbol")
+
+                addFunction(
+                    FunSpec.constructorBuilder()
+                        .addParameter("context", References.IrPluginContext)
+                        .callThisConstructor(
+                            CodeBlock.of(
+                                "%T(context)",
+                                className.nestedClass("Entries").nestedClass(name)
+                            )
+                        )
+                        .build()
+                )
+
             }.build()
         }
     }

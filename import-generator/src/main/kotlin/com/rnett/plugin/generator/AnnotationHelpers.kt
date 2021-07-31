@@ -18,7 +18,8 @@ internal fun AnnotationArgument.Kind.valueType(classNameForFqName: (ResolvedName
             .parameterizedBy(elementKind.valueType(classNameForFqName))
         is AnnotationArgument.Kind.ClassRef -> References.IrClassSymbol
         is AnnotationArgument.Kind.Constant -> this.valueKind.valueType
-        is AnnotationArgument.Kind.Enum -> References.IrEnumEntrySymbol
+        is AnnotationArgument.Kind.ExportedEnum -> classNameForFqName(classFqName).nestedClass("Instance")
+        is AnnotationArgument.Kind.OpaqueEnum -> References.IrEnumEntrySymbol
     }
 
 internal fun AnnotationArgument.asOpaque(): CodeBlock = when (this) {
@@ -50,11 +51,14 @@ internal fun AnnotationArgument.asOpaque(): CodeBlock = when (this) {
     )
 }
 
-internal fun AnnotationArgument.value(context: String, classNameForFqName: (ResolvedName) -> ClassName): CodeBlock =
+internal fun AnnotationArgument.defaultValue(
+    context: String,
+    classNameForFqName: (ResolvedName) -> ClassName
+): CodeBlock =
     when (this) {
         is AnnotationArgument.Array -> CodeBlock.of(
             "listOf(${this.values.joinToString(", ") { "%L" }})",
-            *values.map { it.value(context, classNameForFqName) }.toTypedArray()
+            *values.map { it.defaultValue(context, classNameForFqName) }.toTypedArray()
         )
         is AnnotationArgument.ClassRef -> CodeBlock.of(
             "$context.referenceClass(%T(%S))!!",
@@ -62,7 +66,7 @@ internal fun AnnotationArgument.value(context: String, classNameForFqName: (Reso
             fqName.fqName
         )
         is AnnotationArgument.Constant -> CodeBlock.of(this.value.valueAsString())
-        is AnnotationArgument.Enum -> CodeBlock.of(
+        is AnnotationArgument.OpaqueEnum -> CodeBlock.of(
             "$context.%M(%T(%S), %T.identifier(%S))!!",
             References.referenceEnumEntry,
             References.FqName,
@@ -70,9 +74,13 @@ internal fun AnnotationArgument.value(context: String, classNameForFqName: (Reso
             References.Name,
             this.name
         )
+        is AnnotationArgument.ExportedEnum -> CodeBlock.of(
+            "%T($context)",
+            classNameForFqName(classFqName).nestedClass(name)
+        )
         is AnnotationArgument.ExportedAnnotation -> CodeBlock.of("%T.Instance(${
             arguments.toList().joinToString(", ") {
-                "${it.first} = ${it.second.value(context, classNameForFqName)}"
+                "${it.first} = ${it.second.defaultValue(context, classNameForFqName)}"
             }
         })", classNameForFqName(fqName))
         is AnnotationArgument.OpaqueAnnotation -> asOpaque()
@@ -88,7 +96,7 @@ internal fun value(
     fun standard(
         type: CodeBlock,
         transform: CodeBlock,
-        defaultTransform: (AnnotationArgument) -> CodeBlock = { it.value(context, classNameForFqName) }
+        defaultTransform: (AnnotationArgument) -> CodeBlock = { it.defaultValue(context, classNameForFqName) }
     ): CodeBlock = if (default != null) {
         CodeBlock.of(
             "$argument?.%M<%L>()?.let{ %L } ?: %L",
@@ -122,9 +130,13 @@ internal fun value(
             CodeBlock.of("%T<${kind.valueKind.name}>", References.IrConst),
             CodeBlock.of("it.value")
         )
-        is AnnotationArgument.Kind.Enum -> standard(
+        is AnnotationArgument.Kind.OpaqueEnum -> standard(
             CodeBlock.of("%T", References.IrGetEnumValue),
             CodeBlock.of("it.symbol")
+        )
+        is AnnotationArgument.Kind.ExportedEnum -> standard(
+            CodeBlock.of("%T", References.IrGetEnumValue),
+            CodeBlock.of("%T.instance(it)", classNameForFqName(kind.classFqName))
         )
         is AnnotationArgument.Kind.ExportedAnnotation -> standard(
             CodeBlock.of("%T", References.IrConstructorCall),
