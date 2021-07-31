@@ -16,7 +16,7 @@ import org.jetbrains.kotlin.ir.util.*
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.utils.addToStdlib.cast
-import test.generation.Names.tester.second.TestEnum.Instance
+import test.generation.Names.tester.second.TestEnum.*
 
 public class Names(
     private val _context: IrPluginContext
@@ -1489,14 +1489,13 @@ public class Names(
                  */
                 public val type: IrSimpleType = owner.typeWith()
 
-                public val One: Instance.One = Instance.One(Entries.One.resolveSymbol(_context))
-
-                public val Two: Instance.Two = Instance.Two(Entries.Two.resolveSymbol(_context))
-
-                public val Three: Instance.Three =
-                    Instance.Three(Entries.Three.resolveSymbol(_context))
-
                 public constructor(context: IrPluginContext) : this(context, resolveSymbol(context))
+
+                public fun One(): One = One(Entries.One.resolveSymbol(_context))
+
+                public fun Two(): Two = Two(Entries.Two.resolveSymbol(_context))
+
+                public fun Three(): Three = Three(Entries.Three.resolveSymbol(_context))
 
                 public fun testProp(): testProp = testProp(_context)
 
@@ -1510,31 +1509,39 @@ public class Names(
 
                     public override val classReference: Reference = Reference
 
+                    public fun instance(symbol: IrEnumEntrySymbol): Instance = when (this) {
+                        One -> One(symbol)
+                        Two -> Two(symbol)
+                        Three -> Three(symbol)
+                    }
+
                     public override fun getResolvedReference(
                         context: IrPluginContext,
                         symbol: IrEnumEntrySymbol
-                    ): Instance = when (this) {
-                        One -> Instance.One(symbol)
-                        Two -> Instance.Two(symbol)
-                        Three -> Instance.Three(symbol)
-                    }
+                    ): Instance = instance(symbol)
                 }
+
+                public class One(
+                    symbol: IrEnumEntrySymbol
+                ) : Instance(Entries.One, symbol)
+
+                public class Two(
+                    symbol: IrEnumEntrySymbol
+                ) : Instance(Entries.Two, symbol)
+
+                public class Three(
+                    symbol: IrEnumEntrySymbol
+                ) : Instance(Entries.Three, symbol)
 
                 public sealed class Instance(
                     entry: Entries,
                     symbol: IrEnumEntrySymbol
                 ) : ResolvedEnumEntry<Instance>(entry, symbol) {
-                    public class One(
-                        symbol: IrEnumEntrySymbol
-                    ) : Instance(Entries.One, symbol)
-
-                    public class Two(
-                        symbol: IrEnumEntrySymbol
-                    ) : Instance(Entries.Two, symbol)
-
-                    public class Three(
-                        symbol: IrEnumEntrySymbol
-                    ) : Instance(Entries.Three, symbol)
+                    init {
+                        check(entry.signature == symbol.signature) {
+                            """Symbol's signature does not match entry $entry"""
+                        }
+                    }
                 }
 
                 /**
@@ -1661,14 +1668,32 @@ public class Names(
                         symbol: IrClassSymbol
                     ): TestEnum = TestEnum(context, symbol)
 
-                    public fun instance(symbol: IrEnumEntrySymbol): Instance {
+                    public fun entry(symbol: IrEnumEntrySymbol): Entries {
                         require(symbol.owner.parentAsClass.hasEqualFqName(fqName)) {
                             """Enum symbol $symbol is not an entry of $fqName"""
                         }
-                        return Instance.valueOf(symbol.owner.name.asString())
+                        return Entries.valueOf(symbol.owner.name.asString())
                     }
 
+                    public fun entryOrNull(symbol: IrEnumEntrySymbol): Entries? {
+                        if (!(symbol.owner.parentAsClass.hasEqualFqName(fqName))) {
+                            return null
+                        }
+                        return Entries.values().firstOrNull {
+                            it.name == symbol.owner.name.asString()
+                        }
+                    }
+
+                    public fun instance(symbol: IrEnumEntrySymbol): Instance =
+                        entry(symbol).instance(symbol)
+
+                    public fun instanceOrNull(symbol: IrEnumEntrySymbol): Instance? =
+                        entryOrNull(symbol)?.instance(symbol)
+
                     public fun instance(`get`: IrGetEnumValue): Instance = instance(get.symbol)
+
+                    public fun instanceOrNull(`get`: IrGetEnumValue): Instance? =
+                        instanceOrNull(get.symbol)
                 }
             }
 

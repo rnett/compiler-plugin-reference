@@ -2,21 +2,16 @@ package com.rnett.plugin.generator
 
 import com.rnett.plugin.ExportDeclaration
 import com.rnett.plugin.Platform
-import com.squareup.kotlinpoet.ClassName
-import com.squareup.kotlinpoet.FileSpec
-import com.squareup.kotlinpoet.FunSpec
-import com.squareup.kotlinpoet.KModifier
-import com.squareup.kotlinpoet.ParameterSpec
-import com.squareup.kotlinpoet.PropertySpec
-import com.squareup.kotlinpoet.TypeSpec
+import com.squareup.kotlinpoet.*
 import java.io.File
 
 const val contextPropName = "_context"
 private val contextConstructorParameter = ParameterSpec.builder(contextPropName, References.IrPluginContext).build()
-fun FunSpec.Builder.addContextParameter() = addParameter(contextConstructorParameter)
+fun FunSpec.Builder.addContextCtorParameter() = addParameter(contextConstructorParameter)
+fun FunSpec.Builder.addContextParameter() = addParameter("context", References.IrPluginContext)
 
 fun TypeSpec.Builder.addContextConstructor(): TypeSpec.Builder = apply {
-    primaryConstructor(FunSpec.constructorBuilder().addContextParameter().build())
+    primaryConstructor(FunSpec.constructorBuilder().addContextCtorParameter().build())
 }
 
 fun TypeSpec.Builder.addContextProperty(): TypeSpec.Builder = apply {

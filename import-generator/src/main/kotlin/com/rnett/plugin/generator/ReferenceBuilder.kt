@@ -115,21 +115,29 @@ internal object ReferenceBuilder {
             )
         }
 
-        builder.addFunction(FunSpec.builder("getResolvedReference")
-            .addModifiers(KModifier.OVERRIDE)
+        builder.addFunction(FunSpec.builder("instance")
             .returns(resolvedType.nestedClass("Instance"))
-            .addParameter("context", References.IrPluginContext)
             .addParameter("symbol", References.IrEnumEntrySymbol)
             .addCode(CodeBlock.builder()
                 .beginControlFlow("return when(this) {")
                 .apply {
                     enumNames!!.forEach { (name, _) ->
-                        addStatement("%L -> Instance.%L(symbol)", name, name)
+                        addStatement("%L -> %L(symbol)", name, name)
                     }
                 }
                 .endControlFlow()
                 .build())
             .build())
+
+        builder.addFunction(
+            FunSpec.builder("getResolvedReference")
+                .addModifiers(KModifier.OVERRIDE)
+                .returns(resolvedType.nestedClass("Instance"))
+                .addParameter("context", References.IrPluginContext)
+                .addParameter("symbol", References.IrEnumEntrySymbol)
+                .addCode("return instance(symbol)")
+                .build()
+        )
 
         return builder.build()
     }

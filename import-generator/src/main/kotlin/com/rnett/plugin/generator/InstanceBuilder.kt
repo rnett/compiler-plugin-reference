@@ -51,6 +51,22 @@ object InstanceBuilder {
         )
     }
 
+    fun ExportDeclaration.Class.buildEnumEntries(className: ClassName): List<TypeSpec> {
+        return enumNames!!.map { (name, _) ->
+            TypeSpec.classBuilder(name).apply {
+                primaryConstructor(
+                    FunSpec.constructorBuilder()
+                        .addParameter("symbol", References.IrEnumEntrySymbol)
+                        .build()
+                )
+                superclass(className.nestedClass("Instance"))
+                addSuperclassConstructorParameter("%T", className.nestedClass("Entries").nestedClass(name))
+                addSuperclassConstructorParameter("symbol")
+            }.build()
+        }
+    }
+
+    @OptIn(ExperimentalStdlibApi::class)
     private fun ExportDeclaration.Class.buildClassInstance(
         className: ClassName,
         nameLookup: FqNameLookup
@@ -70,44 +86,82 @@ object InstanceBuilder {
 
                 addSuperclassConstructorParameter("entry, symbol")
 
-                enumNames.forEach { (name, _) ->
-                    addType(
-                        TypeSpec.classBuilder(name).apply {
-                            primaryConstructor(
-                                FunSpec.constructorBuilder()
-                                    .addParameter("symbol", References.IrEnumEntrySymbol)
-                                    .build()
-                            )
-                            superclass(instanceType)
-                            addSuperclassConstructorParameter("%T", className.nestedClass("Entries").nestedClass(name))
-                            addSuperclassConstructorParameter("symbol")
-                        }.build()
-                    )
-                }
+                addInitializerBlock(
+                    CodeBlock.builder()
+                        .beginControlFlow("check(entry.signature == symbol.signature)")
+                        .addStatement("%P", "Symbol's signature does not match entry ${'$'}entry")
+                        .endControlFlow()
+                        .build()
+                )
             }
 
-            val ctor = FunSpec.builder("instance").apply {
-                addParameter("symbol", References.IrEnumEntrySymbol)
-                returns(instanceType)
-                beginControlFlow(
-                    "require(symbol.owner.%M.%M(fqName))",
-                    References.parentAsClass,
-                    References.hasEqualFqName
+            val methods = buildList<FunSpec> {
+                add(
+                    FunSpec.builder("entry").apply {
+                        addParameter("symbol", References.IrEnumEntrySymbol)
+                        returns(className.nestedClass("Entries"))
+                        beginControlFlow(
+                            "require(symbol.owner.%M.%M(fqName))",
+                            References.parentAsClass,
+                            References.hasEqualFqName
+                        )
+                        addStatement("%P", "Enum symbol \$symbol is not an entry of \$fqName")
+                        endControlFlow()
+                        addStatement("return Entries.valueOf(symbol.owner.name.asString())")
+                    }.build()
                 )
-                addStatement("%P", "Enum symbol \$symbol is not an entry of \$fqName")
-                endControlFlow()
-                addStatement("return %T.valueOf(symbol.owner.name.asString())", instanceType)
-            }.build()
+                add(
+                    FunSpec.builder("entryOrNull").apply {
+                        addParameter("symbol", References.IrEnumEntrySymbol)
+                        returns(className.nestedClass("Entries").copy(nullable = true))
+                        beginControlFlow(
+                            "if( !(symbol.owner.%M.%M(fqName)))",
+                            References.parentAsClass,
+                            References.hasEqualFqName
+                        )
+                        addStatement("return null")
+                        endControlFlow()
+                        beginControlFlow("return Entries.values().firstOrNull")
+                        addStatement("it.name == symbol.owner.name.asString()")
+                        endControlFlow()
+                    }.build()
+                )
+
+                add(
+                    FunSpec.builder("instance").apply {
+                        addParameter("symbol", References.IrEnumEntrySymbol)
+                        returns(instanceType)
+                        addStatement("return entry(symbol).instance(symbol)")
+                    }.build()
+                )
+
+                add(
+                    FunSpec.builder("instanceOrNull").apply {
+                        addParameter("symbol", References.IrEnumEntrySymbol)
+                        returns(instanceType.copy(nullable = true))
+                        addStatement("return entryOrNull(symbol)?.instance(symbol)")
+                    }.build()
+                )
+
+                add(
+                    FunSpec.builder("instance").apply {
+                        addParameter("get", References.IrGetEnumValue)
+                        returns(instanceType)
+                        addStatement("return instance(get.symbol)")
+                    }.build()
+                )
+
+                add(
+                    FunSpec.builder("instanceOrNull").apply {
+                        addParameter("get", References.IrGetEnumValue)
+                        returns(instanceType.copy(nullable = true))
+                        addStatement("return instanceOrNull(get.symbol)")
+                    }.build()
+                )
+            }
 
 
-            val ctor2 = FunSpec.builder("instance").apply {
-                addParameter("get", References.IrGetEnumValue)
-                returns(instanceType)
-                addStatement("return instance(get.symbol)")
-            }.build()
-
-
-            return instanceBuilder.build() to listOf(ctor, ctor2)
+            return instanceBuilder.build() to methods
         }
 
         if (this.isAnnotation) {

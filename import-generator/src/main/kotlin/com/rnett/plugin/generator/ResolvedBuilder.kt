@@ -3,6 +3,7 @@ package com.rnett.plugin.generator
 import com.rnett.plugin.ExportDeclaration
 import com.rnett.plugin.PlatformType
 import com.rnett.plugin.TypeString
+import com.rnett.plugin.generator.InstanceBuilder.buildEnumEntries
 import com.rnett.plugin.generator.ReferenceBuilder.buildEnumEntryType
 import com.squareup.kotlinpoet.*
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
@@ -74,7 +75,7 @@ internal object ResolvedBuilder {
 
         primaryConstructor(
             FunSpec.constructorBuilder()
-                .addContextParameter()
+                .addContextCtorParameter()
                 .addModifiers(KModifier.PRIVATE)
                 .addParameter("symbol", References.symbolType(declaration))
                 .build()
@@ -207,11 +208,13 @@ internal object ResolvedBuilder {
                 "[Instance.$it]"
             }
             enumNames!!.forEachIndexed { ord, (name, _) ->
-                val instanceClass = current.nestedClass("Instance").nestedClass(name)
+                val instanceClass = current.nestedClass(name)
                 //TODO change to functions, move instance classes out of sealed parent
-                builder.addProperty(
-                    PropertySpec.builder(name, instanceClass)
-                        .initializer(
+                builder.addFunction(
+                    FunSpec.builder(name)
+                        .returns(instanceClass)
+                        .addStatement(
+                            "return %L",
                             CodeBlock.of("%T(Entries.%L.resolveSymbol(_context))", instanceClass, name)
                         )
                         .build()
@@ -219,6 +222,7 @@ internal object ResolvedBuilder {
             }
 
             builder.addType(buildEnumEntryType(current))
+            builder.addTypes(buildEnumEntries(current))
         }
 
         if (annotationProperties != null) {
